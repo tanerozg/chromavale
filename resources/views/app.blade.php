@@ -11,7 +11,7 @@
 
         <meta property="og:type" content="website">
         <meta property="og:site_name" content="{{ config('app.name', 'ChromaVale') }}">
-        <meta property="og:title" content="ChromaVale — Your screen, tuned to your eyes">
+        <meta property="og:title" content="ChromaVale - Your screen, tuned to your eyes">
         <meta property="og:description" content="{{ $cvDescription }}">
         <meta property="og:url" content="{{ url()->current() }}">
         <meta property="og:image" content="{{ url('/og-image.png') }}">
@@ -19,7 +19,7 @@
         <meta property="og:image:height" content="630">
 
         <meta name="twitter:card" content="summary_large_image">
-        <meta name="twitter:title" content="ChromaVale — Your screen, tuned to your eyes">
+        <meta name="twitter:title" content="ChromaVale - Your screen, tuned to your eyes">
         <meta name="twitter:description" content="{{ $cvDescription }}">
         <meta name="twitter:image" content="{{ url('/og-image.png') }}">
 

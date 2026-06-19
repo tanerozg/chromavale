@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Generates public/apple-touch-icon.png — the ChromaVale lens mark:
+ * Generates public/apple-touch-icon.png - the ChromaVale lens mark:
  * dark background, white ring, prism-gradient core.
  */
 

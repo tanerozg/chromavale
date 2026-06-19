@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Generates public/og-image.png — a 1200x630 social share card for
+ * Generates public/og-image.png - a 1200x630 social share card for
  * ChromaVale: dark background, lens mark, wordmark, tagline, spectrum bar.
  */
 

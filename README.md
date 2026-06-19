@@ -12,10 +12,10 @@ ChromaVale, built on Laravel + Inertia + Vue 3.
 
 ## What's inside
 
-- **Landing page** (`/`) — a premium, fully bilingual (EN/NL) marketing page
+- **Landing page** (`/`) - a premium, fully bilingual (EN/NL) marketing page
   with an EN/NL flag switcher in the navbar. Language is auto-detected from the
   browser on first visit and remembered in `localStorage`.
-- **Live demo** (`/try`) — a working in-browser color playground:
+- **Live demo** (`/try`) - a working in-browser color playground:
   - A real-time color engine (temperature, saturation, contrast, brightness,
     and per-channel red/green/blue) driven by an SVG color filter.
   - Color-blindness simulation (protanopia, deuteranopia, tritanopia) and a

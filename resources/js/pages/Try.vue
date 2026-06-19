@@ -131,7 +131,7 @@ function fmt(key: ParamKey, suffix: string) {
 </script>
 
 <template>
-    <Head title="Try ChromaVale — Live color demo" />
+    <Head title="Try ChromaVale - Live color demo" />
 
     <!-- Live color pipeline. Applied to the scene via filter: url(#cv) -->
     <svg class="cv-defs" aria-hidden="true">

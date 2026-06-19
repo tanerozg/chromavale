@@ -383,7 +383,7 @@ const t = computed(() => content[lang.value]);
 </script>
 
 <template>
-    <Head title="ChromaVale — Your screen, your colors">
+    <Head title="ChromaVale - Your screen, your colors">
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
             rel="preconnect"
