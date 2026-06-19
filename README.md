@@ -43,7 +43,7 @@ npm install
 cp .env.example .env
 php artisan key:generate
 
-# Database (SQLite by default)
+# Database (set DB_* in .env, then migrate)
 php artisan migrate
 
 # Run the dev server (Vite + Laravel)
@@ -52,6 +52,20 @@ composer run dev
 
 Then open the app in your browser. The marketing landing is served at `/` and
 the interactive demo at `/try`.
+
+### Waitlist emails (Resend)
+
+The `/download` page collects waitlist signups and sends a welcome email via
+[Resend](https://resend.com). To enable sending, set in `.env`:
+
+```bash
+MAIL_MAILER=resend
+RESEND_API_KEY=your_resend_api_key
+MAIL_FROM_ADDRESS="hello@yourdomain.com"   # must be a verified Resend domain
+```
+
+Without a key, signups are still stored; the email is skipped and logged.
+Subscribers are viewable at `/admin/waitlist` (authenticated).
 
 > **Windows note:** if `npm run build` fails with a missing `rolldown` native
 > binding, install it explicitly:
