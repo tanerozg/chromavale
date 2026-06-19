@@ -10,6 +10,7 @@ Route::post('waitlist', [WaitlistController::class, 'store'])->name('waitlist.st
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+    Route::get('admin/waitlist', [WaitlistController::class, 'index'])->name('waitlist.index');
 });
 
 require __DIR__.'/settings.php';
