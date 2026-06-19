@@ -40,6 +40,7 @@ const content = {
             features: 'Features',
             colorblind: 'Color blindness',
             pricing: 'Pricing',
+            demo: 'Demo',
             signIn: 'Sign in',
             dashboard: 'Dashboard',
             download: 'Download free',
@@ -210,6 +211,7 @@ const content = {
             features: 'Functies',
             colorblind: 'Kleurenblind',
             pricing: 'Prijzen',
+            demo: 'Demo',
             signIn: 'Inloggen',
             dashboard: 'Dashboard',
             download: 'Download gratis',
@@ -441,6 +443,7 @@ const t = computed(() => content[lang.value]);
                     <a href="#features">{{ t.nav.features }}</a>
                     <a href="#colorblind">{{ t.nav.colorblind }}</a>
                     <a href="#pricing">{{ t.nav.pricing }}</a>
+                    <Link href="/try">{{ t.nav.demo }}</Link>
                 </div>
 
                 <div class="nav-actions">
@@ -794,9 +797,9 @@ const t = computed(() => content[lang.value]);
                                 <span class="check"></span>{{ c }}
                             </li>
                         </ul>
-                        <a href="#pricing" class="btn btn-ink btn-lg">
+                        <Link href="/try" class="btn btn-ink btn-lg">
                             {{ t.spotlight.cta }}
-                        </a>
+                        </Link>
                     </div>
 
                     <div class="demo">
