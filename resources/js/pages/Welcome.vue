@@ -523,9 +523,9 @@ const t = computed(() => content[lang.value]);
                     <Link v-else :href="login()" class="text-link">
                         {{ t.nav.signIn }}
                     </Link>
-                    <a href="#pricing" class="btn btn-ink btn-sm">
+                    <Link href="/download" class="btn btn-ink btn-sm">
                         {{ t.nav.download }}
-                    </a>
+                    </Link>
                 </div>
             </nav>
         </header>
@@ -564,7 +564,7 @@ const t = computed(() => content[lang.value]);
                     </h1>
                     <p class="lede">{{ t.hero.lede }}</p>
                     <div class="hero-cta">
-                        <a href="#pricing" class="btn btn-ink btn-lg">
+                        <Link href="/download" class="btn btn-ink btn-lg">
                             <svg
                                 viewBox="0 0 20 20"
                                 fill="none"
@@ -580,7 +580,7 @@ const t = computed(() => content[lang.value]);
                                 />
                             </svg>
                             {{ t.hero.ctaPrimary }}
-                        </a>
+                        </Link>
                         <a href="#features" class="btn btn-soft btn-lg">
                             {{ t.hero.ctaSecondary }}
                         </a>
@@ -933,9 +933,9 @@ const t = computed(() => content[lang.value]);
                                 <span class="check"></span>{{ p }}
                             </li>
                         </ul>
-                        <a href="#top" class="btn btn-soft btn-block btn-lg">
+                        <Link href="/download" class="btn btn-soft btn-block btn-lg">
                             {{ t.pricing.free.cta }}
-                        </a>
+                        </Link>
                     </article>
 
                     <article class="plan plan-pro">
@@ -960,9 +960,9 @@ const t = computed(() => content[lang.value]);
                                 <span class="check on"></span>{{ p }}
                             </li>
                         </ul>
-                        <a href="#top" class="btn btn-accent btn-block btn-lg">
+                        <Link href="/download" class="btn btn-accent btn-block btn-lg">
                             {{ t.pricing.pro.cta }}
-                        </a>
+                        </Link>
                         <p class="plan-fine">{{ t.pricing.pro.fine }}</p>
                     </article>
                 </div>
@@ -974,7 +974,7 @@ const t = computed(() => content[lang.value]);
                     <h2 class="cta-title">{{ t.cta.title }}</h2>
                     <p class="cta-sub">{{ t.cta.sub }}</p>
                     <div class="cta-actions">
-                        <a href="#top" class="btn btn-light btn-lg">
+                        <Link href="/download" class="btn btn-light btn-lg">
                             <svg
                                 viewBox="0 0 16 16"
                                 fill="currentColor"
@@ -986,8 +986,8 @@ const t = computed(() => content[lang.value]);
                                 />
                             </svg>
                             {{ t.cta.mac }}
-                        </a>
-                        <a href="#top" class="btn btn-light btn-lg">
+                        </Link>
+                        <Link href="/download" class="btn btn-light btn-lg">
                             <svg
                                 viewBox="0 0 16 16"
                                 fill="currentColor"
@@ -999,7 +999,7 @@ const t = computed(() => content[lang.value]);
                                 />
                             </svg>
                             {{ t.cta.win }}
-                        </a>
+                        </Link>
                     </div>
                 </div>
             </section>
