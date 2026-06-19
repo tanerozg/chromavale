@@ -1,96 +1,368 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
 import { dashboard, login } from '@/routes';
 
-const features = [
-    {
-        title: 'Kleuren-engine',
-        body: 'Stel kleurtemperatuur, tint, verzadiging, contrast en gamma in. Per kanaal regelbaar voor rood, groen en blauw, in realtime over je hele scherm.',
-        icon: 'sliders',
-    },
-    {
-        title: 'Kant-en-klare presets',
-        body: 'Comfort, leesmodus, hoog contrast, grijswaarden en levendig. Mooie profielen voor directe waarde, klaar om te gebruiken.',
-        icon: 'layers',
-    },
-    {
-        title: 'Per-app filtering',
-        body: 'Pas een profiel alleen toe op specifieke programma’s. Warme tinten in je editor, neutraal in je fotobewerker.',
-        icon: 'window',
-    },
-    {
-        title: 'Profielen en sneltoetsen',
-        body: 'Bouw onbeperkt eigen kleurprofielen en wissel er direct tussen met een hotkey. Geen menu in om te duiken.',
-        icon: 'command',
-    },
-    {
-        title: 'Slimme schema’s',
-        body: 'Automatisch warmer in de avond, je correctieprofiel overdag. Je scherm past zich aan zonder dat je eraan denkt.',
-        icon: 'clock',
-    },
-    {
-        title: 'Vloeiende overgangen',
-        body: 'Profielen faden zacht in elkaar over, zonder harde sprong. Bediening vanuit de systeemtray, altijd binnen handbereik.',
-        icon: 'transition',
-    },
-];
+type Lang = 'en' | 'nl';
+const lang = ref<Lang>('en');
 
-const compareRows = [
-    {
-        label: 'Platform',
-        windows: 'Alleen Windows',
-        flux: 'Vooral Windows',
-        chroma: 'Mac en Windows',
-    },
-    {
-        label: 'Kleurcontrole',
-        windows: '6 presets + intensiteit',
-        flux: 'Warmte en paletten',
-        chroma: 'Volledig per kanaal, onbeperkte paletten',
-    },
-    {
-        label: 'Kleurenblind',
-        windows: '3 generieke presets',
-        flux: 'Basis of geen',
-        chroma: 'Persoonlijke test en daltonisatie op maat',
-    },
-    {
-        label: 'Per-app filter',
-        windows: false,
-        flux: 'Soms',
-        chroma: true,
-    },
-    {
-        label: 'Profielen, hotkeys, schema’s',
-        windows: false,
-        flux: 'Beperkt',
-        chroma: true,
-    },
-    {
-        label: 'Interface',
-        windows: 'Verstopt in instellingen',
-        flux: 'Simpel',
-        chroma: 'Gepolijste app met tray en vloeiende overgangen',
-    },
-];
+const featureIcons = [
+    'sliders',
+    'layers',
+    'window',
+    'command',
+    'clock',
+    'transition',
+] as const;
 
-const freePoints = [
-    'Basale schermkleur-aanpassing',
-    'Vaste presets: nacht, grijswaarden, contrast, comfort',
-    'Basisintensiteit en helderheid',
-    'Volledig op Mac en Windows',
-];
+const content = {
+    en: {
+        nav: {
+            features: 'Features',
+            colorblind: 'Color blindness',
+            pricing: 'Pricing',
+            signIn: 'Sign in',
+            dashboard: 'Dashboard',
+            download: 'Download free',
+        },
+        hero: {
+            platforms: 'macOS & Windows',
+            title1: 'Your screen,',
+            title2: 'tuned to',
+            title3: 'your eyes.',
+            lede: 'ChromaVale adjusts the colors of your entire screen in real time. From a warm reading mode to personal color-blind correction tuned to your exact type and severity. Not one filter for everyone, but control made for you.',
+            ctaPrimary: 'Download free',
+            ctaSecondary: 'See features',
+            fine: 'Free to use. One-time Pro upgrade, no subscription. macOS 12+ and Windows 10/11.',
+            preview: 'Preview',
+            chips: ['Comfort', 'Reading', 'Night', 'Vivid'],
+            temperature: 'Temperature',
+            saturation: 'Saturation',
+        },
+        stats: [
+            {
+                num: '8%',
+                label: 'of men are color blind, and are served generic presets everywhere.',
+            },
+            {
+                num: '2 → 1',
+                label: 'Mac and Windows in one app, with the same look and controls.',
+            },
+            {
+                num: '€0',
+                label: 'to get started. One-time for Pro, never a subscription.',
+            },
+        ],
+        featuresHead: {
+            kicker: 'Features',
+            heading: 'Everything Windows Color Filters doesn’t do.',
+            sub: 'The built-in filters are basic, hidden and Windows-only. ChromaVale gives you deep control, on both platforms, in an interface you’ll actually want to open.',
+        },
+        features: [
+            {
+                title: 'Color engine',
+                body: 'Set color temperature, tint, saturation, contrast and gamma. Adjustable per channel for red, green and blue, in real time across your whole screen.',
+            },
+            {
+                title: 'Ready-made presets',
+                body: 'Comfort, reading mode, high contrast, grayscale and vivid. Beautiful profiles for instant value, ready to use.',
+            },
+            {
+                title: 'Per-app filtering',
+                body: 'Apply a profile to specific apps only. Warm tones in your editor, neutral in your photo tool.',
+            },
+            {
+                title: 'Profiles and shortcuts',
+                body: 'Build unlimited custom color profiles and switch instantly with a hotkey. No menu to dig through.',
+            },
+            {
+                title: 'Smart schedules',
+                body: 'Automatically warmer in the evening, your correction profile by day. Your screen adapts without you thinking about it.',
+            },
+            {
+                title: 'Smooth transitions',
+                body: 'Profiles fade gently into each other, no harsh jump. Control from the system tray, always within reach.',
+            },
+        ],
+        spotlight: {
+            kicker: 'The killer feature',
+            heading: 'Not a filter. A tool that fits your eyes.',
+            sub: 'A short test in the app determines your exact type, protan, deutan or tritan, and its severity. Then ChromaVale remaps precisely the colors that confuse you into tones you can actually tell apart. Not generic. Made to measure.',
+            checks: [
+                'Interactive calibration determines type and severity',
+                'Personal daltonization, not a fixed preset',
+                'Distinction mode pulls tricky colors apart',
+            ],
+            cta: 'Try the correction',
+            without: 'Without correction',
+            with: 'With ChromaVale',
+            withoutNote: 'Red and green blur together.',
+            withNote: 'Each tone gets its own space. Distinguishable again.',
+        },
+        compare: {
+            kicker: 'Comparison',
+            heading: 'Why ChromaVale is better.',
+            sub: 'Three real differences: cross-platform, personal color-blind correction, and deep control with automation.',
+            cols: ['Windows Filters', 'ScreenTint / f.lux', 'ChromaVale'],
+            rows: [
+                {
+                    label: 'Platform',
+                    windows: 'Windows only',
+                    flux: 'Mostly Windows',
+                    chroma: 'Mac and Windows',
+                },
+                {
+                    label: 'Color control',
+                    windows: '6 presets + intensity',
+                    flux: 'Warmth and palettes',
+                    chroma: 'Fully per channel, unlimited palettes',
+                },
+                {
+                    label: 'Color blindness',
+                    windows: '3 generic presets',
+                    flux: 'Basic or none',
+                    chroma: 'Personal test and made-to-measure daltonization',
+                },
+                {
+                    label: 'Per-app filter',
+                    windows: false,
+                    flux: 'Sometimes',
+                    chroma: true,
+                },
+                {
+                    label: 'Profiles, hotkeys, schedules',
+                    windows: false,
+                    flux: 'Limited',
+                    chroma: true,
+                },
+                {
+                    label: 'Interface',
+                    windows: 'Hidden in settings',
+                    flux: 'Simple',
+                    chroma: 'Polished app with tray and smooth transitions',
+                },
+            ],
+        },
+        pricing: {
+            kicker: 'Pricing',
+            heading: 'Free to start. One-time for Pro.',
+            sub: 'For most people ChromaVale feels completely free. Those who use the personal correction daily pay once. No subscription.',
+            recommended: 'Recommended',
+            free: {
+                name: 'Free',
+                desc: 'The magnet. Instant value.',
+                amount: '€0',
+                per: 'forever',
+                points: [
+                    'Basic screen color adjustment',
+                    'Fixed presets: night, grayscale, contrast, comfort',
+                    'Basic intensity and brightness',
+                    'Fully on Mac and Windows',
+                ],
+                cta: 'Download for Mac and Windows',
+            },
+            pro: {
+                name: 'Pro',
+                desc: 'One-time. The full toolkit.',
+                amount: '€15',
+                per: 'one-time, no sub',
+                points: [
+                    'Personal color-blind calibration and daltonization',
+                    'Unlimited custom palettes',
+                    'Per-app and per-window filtering',
+                    'Profiles, shortcuts and automatic schedules',
+                ],
+                cta: 'Unlock Pro',
+                fine: 'Try the color-blind correction for free first.',
+            },
+        },
+        cta: {
+            title: 'Ready to tune your screen to your eyes?',
+            sub: 'Download free for Mac and Windows. Set up in a minute.',
+            mac: 'Download for macOS',
+            win: 'Download for Windows',
+        },
+        footer: {
+            line: 'Your screen, your colors. For Mac and Windows.',
+        },
+    },
+    nl: {
+        nav: {
+            features: 'Functies',
+            colorblind: 'Kleurenblind',
+            pricing: 'Prijzen',
+            signIn: 'Inloggen',
+            dashboard: 'Dashboard',
+            download: 'Download gratis',
+        },
+        hero: {
+            platforms: 'macOS & Windows',
+            title1: 'Jouw scherm,',
+            title2: 'afgestemd op',
+            title3: 'jouw ogen.',
+            lede: 'ChromaVale past de kleuren van je hele scherm aan in realtime. Van een warme leesmodus tot persoonlijke kleurenblind-correctie die is afgestemd op jouw type en ernst. Niet één filter voor iedereen, maar controle op maat.',
+            ctaPrimary: 'Download gratis',
+            ctaSecondary: 'Bekijk functies',
+            fine: 'Gratis te gebruiken. Eenmalige Pro-upgrade, geen abonnement. macOS 12+ en Windows 10/11.',
+            preview: 'Voorbeeld',
+            chips: ['Comfort', 'Lezen', 'Nacht', 'Levendig'],
+            temperature: 'Temperatuur',
+            saturation: 'Verzadiging',
+        },
+        stats: [
+            {
+                num: '8%',
+                label: 'van de mannen is kleurenblind, en wordt overal met generieke presets bediend.',
+            },
+            {
+                num: '2 → 1',
+                label: 'Mac en Windows in één app, met dezelfde uitstraling en bediening.',
+            },
+            {
+                num: '€0',
+                label: 'om te beginnen. Eenmalig voor Pro, nooit een abonnement.',
+            },
+        ],
+        featuresHead: {
+            kicker: 'Functies',
+            heading: 'Alles wat Windows Color Filters niet doet.',
+            sub: 'De ingebouwde filters zijn basaal, verstopt en Windows-only. ChromaVale geeft je diepe controle, op beide platformen, in een interface die je graag opent.',
+        },
+        features: [
+            {
+                title: 'Kleuren-engine',
+                body: 'Stel kleurtemperatuur, tint, verzadiging, contrast en gamma in. Per kanaal regelbaar voor rood, groen en blauw, in realtime over je hele scherm.',
+            },
+            {
+                title: 'Kant-en-klare presets',
+                body: 'Comfort, leesmodus, hoog contrast, grijswaarden en levendig. Mooie profielen voor directe waarde, klaar om te gebruiken.',
+            },
+            {
+                title: 'Per-app filtering',
+                body: 'Pas een profiel alleen toe op specifieke programma’s. Warme tinten in je editor, neutraal in je fotobewerker.',
+            },
+            {
+                title: 'Profielen en sneltoetsen',
+                body: 'Bouw onbeperkt eigen kleurprofielen en wissel er direct tussen met een hotkey. Geen menu in om te duiken.',
+            },
+            {
+                title: 'Slimme schema’s',
+                body: 'Automatisch warmer in de avond, je correctieprofiel overdag. Je scherm past zich aan zonder dat je eraan denkt.',
+            },
+            {
+                title: 'Vloeiende overgangen',
+                body: 'Profielen faden zacht in elkaar over, zonder harde sprong. Bediening vanuit de systeemtray, altijd binnen handbereik.',
+            },
+        ],
+        spotlight: {
+            kicker: 'De killer-feature',
+            heading: 'Geen filter. Een hulpmiddel dat past bij jouw ogen.',
+            sub: 'Een korte test in de app bepaalt je exacte type, protan, deutan of tritan, en de ernst ervan. Daarna hermapt ChromaVale precies de kleuren die voor jou verwarren naar tinten die je wél kunt onderscheiden. Niet generiek. Op maat.',
+            checks: [
+                'Interactieve kalibratie bepaalt type en ernst',
+                'Persoonlijke daltonisatie, geen vaste preset',
+                'Onderscheid-modus trekt lastige kleuren uit elkaar',
+            ],
+            cta: 'Probeer de correctie',
+            without: 'Zonder correctie',
+            with: 'Met ChromaVale',
+            withoutNote: 'Rood en groen lopen in elkaar over.',
+            withNote: 'Elke tint krijgt eigen ruimte. Weer te onderscheiden.',
+        },
+        compare: {
+            kicker: 'Vergelijking',
+            heading: 'Waarom ChromaVale beter is.',
+            sub: 'Drie echte verschillen: cross-platform, persoonlijke kleurenblind-correctie en diepe controle met automatisering.',
+            cols: ['Windows Filters', 'ScreenTint / f.lux', 'ChromaVale'],
+            rows: [
+                {
+                    label: 'Platform',
+                    windows: 'Alleen Windows',
+                    flux: 'Vooral Windows',
+                    chroma: 'Mac en Windows',
+                },
+                {
+                    label: 'Kleurcontrole',
+                    windows: '6 presets + intensiteit',
+                    flux: 'Warmte en paletten',
+                    chroma: 'Volledig per kanaal, onbeperkte paletten',
+                },
+                {
+                    label: 'Kleurenblind',
+                    windows: '3 generieke presets',
+                    flux: 'Basis of geen',
+                    chroma: 'Persoonlijke test en daltonisatie op maat',
+                },
+                {
+                    label: 'Per-app filter',
+                    windows: false,
+                    flux: 'Soms',
+                    chroma: true,
+                },
+                {
+                    label: 'Profielen, hotkeys, schema’s',
+                    windows: false,
+                    flux: 'Beperkt',
+                    chroma: true,
+                },
+                {
+                    label: 'Interface',
+                    windows: 'Verstopt in instellingen',
+                    flux: 'Simpel',
+                    chroma: 'Gepolijste app met tray en vloeiende overgangen',
+                },
+            ],
+        },
+        pricing: {
+            kicker: 'Prijzen',
+            heading: 'Gratis te beginnen. Eenmalig voor Pro.',
+            sub: 'Voor de meeste mensen voelt ChromaVale volledig gratis. Wie de persoonlijke correctie dagelijks gebruikt, betaalt één keer. Geen abonnement.',
+            recommended: 'Aanrader',
+            free: {
+                name: 'Gratis',
+                desc: 'De magneet. Direct waarde.',
+                amount: '€0',
+                per: 'voor altijd',
+                points: [
+                    'Basale schermkleur-aanpassing',
+                    'Vaste presets: nacht, grijswaarden, contrast, comfort',
+                    'Basisintensiteit en helderheid',
+                    'Volledig op Mac en Windows',
+                ],
+                cta: 'Download voor Mac en Windows',
+            },
+            pro: {
+                name: 'Pro',
+                desc: 'Eenmalig. De volledige toolkit.',
+                amount: '€15',
+                per: 'eenmalig, geen abo',
+                points: [
+                    'Persoonlijke kleurenblind-kalibratie en daltonisatie',
+                    'Onbeperkte custom paletten',
+                    'Per-app en per-venster filtering',
+                    'Profielen, sneltoetsen en automatische schema’s',
+                ],
+                cta: 'Pro ontgrendelen',
+                fine: 'Probeer de kleurenblind-correctie eerst gratis.',
+            },
+        },
+        cta: {
+            title: 'Klaar om je scherm op jouw ogen af te stemmen?',
+            sub: 'Download gratis voor Mac en Windows. In een minuut ingesteld.',
+            mac: 'Download voor macOS',
+            win: 'Download voor Windows',
+        },
+        footer: {
+            line: 'Jouw scherm, jouw kleuren. Voor Mac en Windows.',
+        },
+    },
+} as const;
 
-const proPoints = [
-    'Persoonlijke kleurenblind-kalibratie en daltonisatie',
-    'Onbeperkte custom paletten',
-    'Per-app en per-venster filtering',
-    'Profielen, sneltoetsen en automatische schema’s',
-];
+const t = computed(() => content[lang.value]);
 </script>
 
 <template>
-    <Head title="ChromaVale — Jouw scherm, jouw kleuren">
+    <Head title="ChromaVale — Your screen, your colors">
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
             rel="preconnect"
@@ -147,24 +419,90 @@ const proPoints = [
                 </a>
 
                 <div class="nav-links">
-                    <a href="#functies">Functies</a>
-                    <a href="#kleurenblind">Kleurenblind</a>
-                    <a href="#prijzen">Prijzen</a>
+                    <a href="#features">{{ t.nav.features }}</a>
+                    <a href="#colorblind">{{ t.nav.colorblind }}</a>
+                    <a href="#pricing">{{ t.nav.pricing }}</a>
                 </div>
 
                 <div class="nav-actions">
+                    <div class="lang" role="group" aria-label="Language">
+                        <button
+                            type="button"
+                            class="lang-btn"
+                            :class="{ active: lang === 'en' }"
+                            :aria-pressed="lang === 'en'"
+                            title="English"
+                            @click="lang = 'en'"
+                        >
+                            <svg viewBox="0 0 20 14" aria-hidden="true">
+                                <clipPath id="gbclip">
+                                    <rect width="20" height="14" rx="2" />
+                                </clipPath>
+                                <g clip-path="url(#gbclip)">
+                                    <rect width="20" height="14" fill="#012169" />
+                                    <path
+                                        d="M0 0l20 14M20 0L0 14"
+                                        stroke="#fff"
+                                        stroke-width="2.6"
+                                    />
+                                    <path
+                                        d="M0 0l20 14M20 0L0 14"
+                                        stroke="#C8102E"
+                                        stroke-width="1.4"
+                                    />
+                                    <path
+                                        d="M10 0v14M0 7h20"
+                                        stroke="#fff"
+                                        stroke-width="4"
+                                    />
+                                    <path
+                                        d="M10 0v14M0 7h20"
+                                        stroke="#C8102E"
+                                        stroke-width="2.2"
+                                    />
+                                </g>
+                            </svg>
+                            <span>EN</span>
+                        </button>
+                        <button
+                            type="button"
+                            class="lang-btn"
+                            :class="{ active: lang === 'nl' }"
+                            :aria-pressed="lang === 'nl'"
+                            title="Nederlands"
+                            @click="lang = 'nl'"
+                        >
+                            <svg viewBox="0 0 20 14" aria-hidden="true">
+                                <clipPath id="nlclip">
+                                    <rect width="20" height="14" rx="2" />
+                                </clipPath>
+                                <g clip-path="url(#nlclip)">
+                                    <rect width="20" height="14" fill="#fff" />
+                                    <rect width="20" height="4.67" fill="#AE1C28" />
+                                    <rect
+                                        y="9.33"
+                                        width="20"
+                                        height="4.67"
+                                        fill="#21468B"
+                                    />
+                                </g>
+                            </svg>
+                            <span>NL</span>
+                        </button>
+                    </div>
+
                     <Link
                         v-if="$page.props.auth.user"
                         :href="dashboard()"
                         class="text-link"
                     >
-                        Dashboard
+                        {{ t.nav.dashboard }}
                     </Link>
                     <Link v-else :href="login()" class="text-link">
-                        Inloggen
+                        {{ t.nav.signIn }}
                     </Link>
-                    <a href="#prijzen" class="btn btn-ink btn-sm">
-                        Download gratis
+                    <a href="#pricing" class="btn btn-ink btn-sm">
+                        {{ t.nav.download }}
                     </a>
                 </div>
             </nav>
@@ -174,24 +512,37 @@ const proPoints = [
             <!-- Hero -->
             <section class="hero">
                 <div class="hero-copy">
-                    <span class="eyebrow">
-                        <span class="eyebrow-dot"></span>
-                        Voor macOS en Windows
+                    <span class="platforms">
+                        <svg
+                            class="plat-ico"
+                            viewBox="0 0 16 16"
+                            fill="currentColor"
+                            aria-hidden="true"
+                        >
+                            <path
+                                d="M11.18 8.5c-.02-1.5 1.22-2.22 1.28-2.26-.7-1.02-1.79-1.16-2.18-1.18-.93-.09-1.81.54-2.28.54-.47 0-1.2-.53-1.97-.51-1.01.01-1.94.59-2.46 1.49-1.05 1.82-.27 4.51.75 5.99.5.72 1.1 1.53 1.88 1.5.75-.03 1.04-.49 1.95-.49.91 0 1.17.49 1.97.47.81-.01 1.33-.74 1.83-1.46.58-.84.82-1.65.83-1.69-.02-.01-1.6-.61-1.62-2.43Zm-1.5-4.47c.41-.5.69-1.2.61-1.9-.59.02-1.31.39-1.74.89-.38.44-.72 1.15-.63 1.83.66.05 1.34-.33 1.76-.82Z"
+                            />
+                        </svg>
+                        <svg
+                            class="plat-ico"
+                            viewBox="0 0 16 16"
+                            fill="currentColor"
+                            aria-hidden="true"
+                        >
+                            <path
+                                d="M0 2.2 6.5 1.3v6.2H0V2.2Zm0 11.6 6.5.9V8.5H0v5.3ZM7.3 1.2 16 0v7.5H7.3V1.2Zm0 13.6L16 16V8.5H7.3v6.3Z"
+                            />
+                        </svg>
+                        <span>{{ t.hero.platforms }}</span>
                     </span>
                     <h1 class="display">
-                        Jouw scherm,<br />
-                        afgestemd op<br />
-                        <span class="ink-grad">jouw ogen.</span>
+                        {{ t.hero.title1 }}<br />
+                        {{ t.hero.title2 }}<br />
+                        <span class="ink-grad">{{ t.hero.title3 }}</span>
                     </h1>
-                    <p class="lede">
-                        ChromaVale past de kleuren van je hele scherm aan in
-                        realtime. Van een warme leesmodus tot persoonlijke
-                        kleurenblind-correctie die is afgestemd op jouw type en
-                        ernst. Niet één filter voor iedereen, maar
-                        controle op maat.
-                    </p>
+                    <p class="lede">{{ t.hero.lede }}</p>
                     <div class="hero-cta">
-                        <a href="#prijzen" class="btn btn-ink btn-lg">
+                        <a href="#pricing" class="btn btn-ink btn-lg">
                             <svg
                                 viewBox="0 0 20 20"
                                 fill="none"
@@ -206,16 +557,13 @@ const proPoints = [
                                     stroke-linejoin="round"
                                 />
                             </svg>
-                            Download gratis
+                            {{ t.hero.ctaPrimary }}
                         </a>
-                        <a href="#functies" class="btn btn-soft btn-lg">
-                            Bekijk functies
+                        <a href="#features" class="btn btn-soft btn-lg">
+                            {{ t.hero.ctaSecondary }}
                         </a>
                     </div>
-                    <p class="hero-fine">
-                        Gratis te gebruiken. Eenmalige Pro-upgrade, geen
-                        abonnement. macOS 12+ en Windows 10/11.
-                    </p>
+                    <p class="hero-fine">{{ t.hero.fine }}</p>
                 </div>
 
                 <!-- App window mockup -->
@@ -246,7 +594,7 @@ const proPoints = [
                                 </span>
                                 ChromaVale
                             </div>
-                            <div class="window-tag">Comfort</div>
+                            <div class="window-tag">{{ t.hero.chips[0] }}</div>
                         </div>
 
                         <div class="window-body">
@@ -260,20 +608,26 @@ const proPoints = [
                                     <span style="--c: #4ea1d3"></span>
                                     <span style="--c: #7a6cd6"></span>
                                 </div>
-                                <div class="preview-label">Voorbeeld</div>
+                                <div class="preview-label">
+                                    {{ t.hero.preview }}
+                                </div>
                             </div>
 
                             <div class="controls">
                                 <div class="chips">
-                                    <span class="chip chip-on">Comfort</span>
-                                    <span class="chip">Lezen</span>
-                                    <span class="chip">Nacht</span>
-                                    <span class="chip">Levendig</span>
+                                    <span
+                                        v-for="(chip, i) in t.hero.chips"
+                                        :key="chip"
+                                        class="chip"
+                                        :class="{ 'chip-on': i === 0 }"
+                                    >
+                                        {{ chip }}
+                                    </span>
                                 </div>
 
                                 <div class="slider">
                                     <div class="slider-head">
-                                        <span>Temperatuur</span>
+                                        <span>{{ t.hero.temperature }}</span>
                                         <span class="slider-val">4 200 K</span>
                                     </div>
                                     <div class="track">
@@ -288,7 +642,7 @@ const proPoints = [
 
                                 <div class="slider">
                                     <div class="slider-head">
-                                        <span>Verzadiging</span>
+                                        <span>{{ t.hero.saturation }}</span>
                                         <span class="slider-val">+8</span>
                                     </div>
                                     <div class="track">
@@ -338,46 +692,23 @@ const proPoints = [
 
             <!-- Stat band -->
             <section class="stats">
-                <div class="stat">
-                    <span class="stat-num">8%</span>
-                    <span class="stat-label">
-                        van de mannen is kleurenblind, en wordt overal met
-                        generieke presets bediend.
-                    </span>
-                </div>
-                <div class="stat">
-                    <span class="stat-num">2 → 1</span>
-                    <span class="stat-label">
-                        Mac en Windows in één app, met dezelfde
-                        uitstraling en bediening.
-                    </span>
-                </div>
-                <div class="stat">
-                    <span class="stat-num">€0</span>
-                    <span class="stat-label">
-                        om te beginnen. Eenmalig voor Pro, nooit een
-                        abonnement.
-                    </span>
+                <div v-for="s in t.stats" :key="s.num" class="stat">
+                    <span class="stat-num">{{ s.num }}</span>
+                    <span class="stat-label">{{ s.label }}</span>
                 </div>
             </section>
 
             <!-- Features -->
-            <section id="functies" class="section">
+            <section id="features" class="section">
                 <div class="section-head">
-                    <span class="kicker">Functies</span>
-                    <h2 class="heading">
-                        Alles wat Windows Color Filters niet doet.
-                    </h2>
-                    <p class="sub">
-                        De ingebouwde filters zijn basaal, verstopt en
-                        Windows-only. ChromaVale geeft je diepe controle, op
-                        beide platformen, in een interface die je graag opent.
-                    </p>
+                    <span class="kicker">{{ t.featuresHead.kicker }}</span>
+                    <h2 class="heading">{{ t.featuresHead.heading }}</h2>
+                    <p class="sub">{{ t.featuresHead.sub }}</p>
                 </div>
 
                 <div class="grid">
                     <article
-                        v-for="f in features"
+                        v-for="(f, i) in t.features"
                         :key="f.title"
                         class="card"
                     >
@@ -391,26 +722,26 @@ const proPoints = [
                                 stroke-linejoin="round"
                                 aria-hidden="true"
                             >
-                                <template v-if="f.icon === 'sliders'">
+                                <template v-if="featureIcons[i] === 'sliders'">
                                     <path d="M4 7h10M18 7h2M4 12h2M10 12h10M4 17h7M15 17h5" />
                                     <circle cx="16" cy="7" r="2" />
                                     <circle cx="8" cy="12" r="2" />
                                     <circle cx="13" cy="17" r="2" />
                                 </template>
-                                <template v-else-if="f.icon === 'layers'">
+                                <template v-else-if="featureIcons[i] === 'layers'">
                                     <path d="M12 3 3 8l9 5 9-5-9-5Z" />
                                     <path d="M3 13l9 5 9-5" />
                                     <path d="M3 18l9 5 9-5" opacity="0.4" />
                                 </template>
-                                <template v-else-if="f.icon === 'window'">
+                                <template v-else-if="featureIcons[i] === 'window'">
                                     <rect x="3" y="4" width="18" height="16" rx="2.5" />
                                     <path d="M3 9h18" />
                                     <path d="M6.5 6.5h.01M9 6.5h.01" />
                                 </template>
-                                <template v-else-if="f.icon === 'command'">
+                                <template v-else-if="featureIcons[i] === 'command'">
                                     <path d="M9 6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6Z" />
                                 </template>
-                                <template v-else-if="f.icon === 'clock'">
+                                <template v-else-if="featureIcons[i] === 'clock'">
                                     <circle cx="12" cy="12" r="9" />
                                     <path d="M12 7v5l3.5 2" />
                                 </template>
@@ -428,44 +759,33 @@ const proPoints = [
             </section>
 
             <!-- Colorblind spotlight -->
-            <section id="kleurenblind" class="spotlight">
+            <section id="colorblind" class="spotlight">
                 <div class="spotlight-inner">
                     <div class="spotlight-copy">
-                        <span class="kicker grad">De killer-feature</span>
-                        <h2 class="heading">
-                            Geen filter. Een hulpmiddel dat past bij jouw ogen.
-                        </h2>
-                        <p class="sub">
-                            Een korte test in de app bepaalt je exacte type,
-                            protan, deutan of tritan, en de ernst ervan. Daarna
-                            hermapt ChromaVale precies de kleuren die voor jou
-                            verwarren naar tinten die je wél kunt
-                            onderscheiden. Niet generiek. Op maat.
-                        </p>
+                        <span class="kicker grad">
+                            {{ t.spotlight.kicker }}
+                        </span>
+                        <h2 class="heading">{{ t.spotlight.heading }}</h2>
+                        <p class="sub">{{ t.spotlight.sub }}</p>
                         <ul class="check-list">
-                            <li>
-                                <span class="check"></span>
-                                Interactieve kalibratie bepaalt type en ernst
-                            </li>
-                            <li>
-                                <span class="check"></span>
-                                Persoonlijke daltonisatie, geen vaste preset
-                            </li>
-                            <li>
-                                <span class="check"></span>
-                                Onderscheid-modus trekt lastige kleuren uit
-                                elkaar
+                            <li
+                                v-for="c in t.spotlight.checks"
+                                :key="c"
+                            >
+                                <span class="check"></span>{{ c }}
                             </li>
                         </ul>
-                        <a href="#prijzen" class="btn btn-ink btn-lg">
-                            Probeer de correctie
+                        <a href="#pricing" class="btn btn-ink btn-lg">
+                            {{ t.spotlight.cta }}
                         </a>
                     </div>
 
                     <div class="demo">
                         <div class="demo-card">
                             <div class="demo-head">
-                                <span class="demo-x">Zonder correctie</span>
+                                <span class="demo-x">
+                                    {{ t.spotlight.without }}
+                                </span>
                             </div>
                             <div class="ramp ramp-flat">
                                 <span style="--c: #8a8f3a"></span>
@@ -475,7 +795,7 @@ const proPoints = [
                                 <span style="--c: #8d8e3b"></span>
                             </div>
                             <p class="demo-note">
-                                Rood en groen lopen in elkaar over.
+                                {{ t.spotlight.withoutNote }}
                             </p>
                         </div>
                         <div class="demo-arrow" aria-hidden="true">
@@ -491,7 +811,9 @@ const proPoints = [
                         </div>
                         <div class="demo-card demo-card-on">
                             <div class="demo-head">
-                                <span class="demo-x on">Met ChromaVale</span>
+                                <span class="demo-x on">
+                                    {{ t.spotlight.with }}
+                                </span>
                             </div>
                             <div class="ramp">
                                 <span style="--c: #d2603f"></span>
@@ -500,10 +822,7 @@ const proPoints = [
                                 <span style="--c: #5aa66a"></span>
                                 <span style="--c: #2f8fb0"></span>
                             </div>
-                            <p class="demo-note">
-                                Elke tint krijgt eigen ruimte. Weer te
-                                onderscheiden.
-                            </p>
+                            <p class="demo-note">{{ t.spotlight.withNote }}</p>
                         </div>
                     </div>
                 </div>
@@ -512,24 +831,22 @@ const proPoints = [
             <!-- Comparison -->
             <section class="section">
                 <div class="section-head">
-                    <span class="kicker">Vergelijking</span>
-                    <h2 class="heading">Waarom ChromaVale beter is.</h2>
-                    <p class="sub">
-                        Drie echte verschillen: cross-platform, persoonlijke
-                        kleurenblind-correctie en diepe controle met
-                        automatisering.
-                    </p>
+                    <span class="kicker">{{ t.compare.kicker }}</span>
+                    <h2 class="heading">{{ t.compare.heading }}</h2>
+                    <p class="sub">{{ t.compare.sub }}</p>
                 </div>
 
                 <div class="table">
                     <div class="table-row table-head">
                         <span></span>
-                        <span class="col">Windows Filters</span>
-                        <span class="col">ScreenTint / f.lux</span>
-                        <span class="col col-chroma">ChromaVale</span>
+                        <span class="col">{{ t.compare.cols[0] }}</span>
+                        <span class="col">{{ t.compare.cols[1] }}</span>
+                        <span class="col col-chroma">
+                            {{ t.compare.cols[2] }}
+                        </span>
                     </div>
                     <div
-                        v-for="row in compareRows"
+                        v-for="row in t.compare.rows"
                         :key="row.label"
                         class="table-row"
                     >
@@ -567,60 +884,64 @@ const proPoints = [
             </section>
 
             <!-- Pricing -->
-            <section id="prijzen" class="section">
+            <section id="pricing" class="section">
                 <div class="section-head">
-                    <span class="kicker">Prijzen</span>
-                    <h2 class="heading">Gratis te beginnen. Eenmalig voor Pro.</h2>
-                    <p class="sub">
-                        Voor de meeste mensen voelt ChromaVale volledig gratis.
-                        Wie de persoonlijke correctie dagelijks gebruikt,
-                        betaalt één keer. Geen abonnement.
-                    </p>
+                    <span class="kicker">{{ t.pricing.kicker }}</span>
+                    <h2 class="heading">{{ t.pricing.heading }}</h2>
+                    <p class="sub">{{ t.pricing.sub }}</p>
                 </div>
 
                 <div class="pricing">
                     <article class="plan">
                         <div class="plan-top">
-                            <h3 class="plan-name">Gratis</h3>
-                            <p class="plan-desc">De magneet. Direct waarde.</p>
+                            <h3 class="plan-name">{{ t.pricing.free.name }}</h3>
+                            <p class="plan-desc">{{ t.pricing.free.desc }}</p>
                         </div>
                         <div class="plan-price">
-                            <span class="amount">€0</span>
-                            <span class="per">voor altijd</span>
+                            <span class="amount">
+                                {{ t.pricing.free.amount }}
+                            </span>
+                            <span class="per">{{ t.pricing.free.per }}</span>
                         </div>
                         <ul class="plan-list">
-                            <li v-for="p in freePoints" :key="p">
+                            <li
+                                v-for="p in t.pricing.free.points"
+                                :key="p"
+                            >
                                 <span class="check"></span>{{ p }}
                             </li>
                         </ul>
                         <a href="#top" class="btn btn-soft btn-block btn-lg">
-                            Download voor Mac en Windows
+                            {{ t.pricing.free.cta }}
                         </a>
                     </article>
 
                     <article class="plan plan-pro">
-                        <div class="plan-badge">Aanrader</div>
+                        <div class="plan-badge">
+                            {{ t.pricing.recommended }}
+                        </div>
                         <div class="plan-top">
-                            <h3 class="plan-name">Pro</h3>
-                            <p class="plan-desc">
-                                Eenmalig. De volledige toolkit.
-                            </p>
+                            <h3 class="plan-name">{{ t.pricing.pro.name }}</h3>
+                            <p class="plan-desc">{{ t.pricing.pro.desc }}</p>
                         </div>
                         <div class="plan-price">
-                            <span class="amount">€15</span>
-                            <span class="per">eenmalig, geen abo</span>
+                            <span class="amount">
+                                {{ t.pricing.pro.amount }}
+                            </span>
+                            <span class="per">{{ t.pricing.pro.per }}</span>
                         </div>
                         <ul class="plan-list">
-                            <li v-for="p in proPoints" :key="p">
+                            <li
+                                v-for="p in t.pricing.pro.points"
+                                :key="p"
+                            >
                                 <span class="check on"></span>{{ p }}
                             </li>
                         </ul>
                         <a href="#top" class="btn btn-accent btn-block btn-lg">
-                            Pro ontgrendelen
+                            {{ t.pricing.pro.cta }}
                         </a>
-                        <p class="plan-fine">
-                            Probeer de kleurenblind-correctie eerst gratis.
-                        </p>
+                        <p class="plan-fine">{{ t.pricing.pro.fine }}</p>
                     </article>
                 </div>
             </section>
@@ -628,13 +949,8 @@ const proPoints = [
             <!-- Final CTA -->
             <section class="cta">
                 <div class="cta-card">
-                    <h2 class="cta-title">
-                        Klaar om je scherm op jouw ogen af te stemmen?
-                    </h2>
-                    <p class="cta-sub">
-                        Download gratis voor Mac en Windows. In een minuut
-                        ingesteld.
-                    </p>
+                    <h2 class="cta-title">{{ t.cta.title }}</h2>
+                    <p class="cta-sub">{{ t.cta.sub }}</p>
                     <div class="cta-actions">
                         <a href="#top" class="btn btn-light btn-lg">
                             <svg
@@ -647,7 +963,7 @@ const proPoints = [
                                     d="M11.18 8.5c-.02-1.5 1.22-2.22 1.28-2.26-.7-1.02-1.79-1.16-2.18-1.18-.93-.09-1.81.54-2.28.54-.47 0-1.2-.53-1.97-.51-1.01.01-1.94.59-2.46 1.49-1.05 1.82-.27 4.51.75 5.99.5.72 1.1 1.53 1.88 1.5.75-.03 1.04-.49 1.95-.49.91 0 1.17.49 1.97.47.81-.01 1.33-.74 1.83-1.46.58-.84.82-1.65.83-1.69-.02-.01-1.6-.61-1.62-2.43Zm-1.5-4.47c.41-.5.69-1.2.61-1.9-.59.02-1.31.39-1.74.89-.38.44-.72 1.15-.63 1.83.66.05 1.34-.33 1.76-.82Z"
                                 />
                             </svg>
-                            Download voor macOS
+                            {{ t.cta.mac }}
                         </a>
                         <a href="#top" class="btn btn-light btn-lg">
                             <svg
@@ -660,7 +976,7 @@ const proPoints = [
                                     d="M0 2.2 6.5 1.3v6.2H0V2.2Zm0 11.6 6.5.9V8.5H0v5.3ZM7.3 1.2 16 0v7.5H7.3V1.2Zm0 13.6L16 16V8.5H7.3v6.3Z"
                                 />
                             </svg>
-                            Download voor Windows
+                            {{ t.cta.win }}
                         </a>
                     </div>
                 </div>
@@ -684,9 +1000,7 @@ const proPoints = [
                     </span>
                     <span class="brand-name">ChromaVale</span>
                 </div>
-                <p class="footer-line">
-                    Jouw scherm, jouw kleuren. Voor Mac en Windows.
-                </p>
+                <p class="footer-line">{{ t.footer.line }}</p>
                 <p class="footer-copy">
                     &copy; {{ new Date().getFullYear() }} ChromaVale
                 </p>
@@ -756,6 +1070,7 @@ main,
     user-select: none;
     text-decoration: none;
     white-space: nowrap;
+    border: none;
     transition:
         transform 0.11s cubic-bezier(0.2, 0.8, 0.2, 1),
         box-shadow 0.11s cubic-bezier(0.2, 0.8, 0.2, 1),
@@ -901,7 +1216,7 @@ main,
 .nav-actions {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.9rem;
 }
 .text-link {
     font-size: 0.95rem;
@@ -913,9 +1228,60 @@ main,
     color: var(--ink);
 }
 
+/* ---------- Language switcher ---------- */
+.lang {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 11px;
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+}
+.lang-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.28rem 0.5rem;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    transition:
+        background 0.15s ease,
+        color 0.15s ease,
+        box-shadow 0.15s ease;
+}
+.lang-btn:hover {
+    color: var(--ink);
+}
+.lang-btn.active {
+    color: var(--ink);
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(16, 16, 24, 0.1);
+}
+.lang-btn svg {
+    width: 18px;
+    height: 12.6px;
+    border-radius: 2px;
+    display: block;
+    box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.12);
+}
+
+.text-link {
+    display: none;
+}
+
 @media (min-width: 880px) {
     .nav-links {
         display: flex;
+    }
+    .text-link {
+        display: inline;
     }
 }
 
@@ -926,23 +1292,23 @@ main,
     padding-top: 4rem;
     padding-bottom: 4.5rem;
 }
-.eyebrow {
+.platforms {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.82rem;
+    font-size: 0.76rem;
     font-weight: 600;
-    color: var(--ink-soft);
-    background: var(--paper-2);
-    border: 1px solid var(--line);
-    padding: 0.4rem 0.8rem;
-    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.13em;
+    color: var(--muted);
 }
-.eyebrow-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #5bd6a0, #4da6ff);
+.plat-ico {
+    width: 14px;
+    height: 14px;
+    color: var(--ink-soft);
+}
+.platforms span {
+    margin-left: 0.15rem;
 }
 .display {
     margin-top: 1.4rem;
@@ -1503,9 +1869,6 @@ main,
     }
     .table-head {
         display: none;
-    }
-    .col::before {
-        content: attr(data-h);
     }
     .row-label {
         margin-bottom: 0.3rem;
