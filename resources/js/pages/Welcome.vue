@@ -1,10 +1,29 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { dashboard, login } from '@/routes';
 
 type Lang = 'en' | 'nl';
+const STORAGE_KEY = 'chromavale-lang';
 const lang = ref<Lang>('en');
+
+function setLang(value: Lang) {
+    lang.value = value;
+}
+
+onMounted(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved === 'en' || saved === 'nl') {
+        lang.value = saved;
+    } else if (navigator.language?.toLowerCase().startsWith('nl')) {
+        lang.value = 'nl';
+    }
+});
+
+watch(lang, (value) => {
+    localStorage.setItem(STORAGE_KEY, value);
+    document.documentElement.lang = value;
+});
 
 const featureIcons = [
     'sliders',
@@ -432,7 +451,7 @@ const t = computed(() => content[lang.value]);
                             :class="{ active: lang === 'en' }"
                             :aria-pressed="lang === 'en'"
                             title="English"
-                            @click="lang = 'en'"
+                            @click="setLang('en')"
                         >
                             <svg viewBox="0 0 20 14" aria-hidden="true">
                                 <clipPath id="gbclip">
@@ -470,7 +489,7 @@ const t = computed(() => content[lang.value]);
                             :class="{ active: lang === 'nl' }"
                             :aria-pressed="lang === 'nl'"
                             title="Nederlands"
-                            @click="lang = 'nl'"
+                            @click="setLang('nl')"
                         >
                             <svg viewBox="0 0 20 14" aria-hidden="true">
                                 <clipPath id="nlclip">
