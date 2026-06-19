@@ -4,6 +4,25 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
+        {{-- SEO + social sharing --}}
+        @php($cvDescription = 'ChromaVale adjusts your entire screen\'s colors in real time, with personal color-blind correction tuned to your exact type and severity. Free for macOS and Windows.')
+        <meta name="description" content="{{ $cvDescription }}">
+        <meta name="theme-color" content="#16161A">
+
+        <meta property="og:type" content="website">
+        <meta property="og:site_name" content="{{ config('app.name', 'ChromaVale') }}">
+        <meta property="og:title" content="ChromaVale — Your screen, tuned to your eyes">
+        <meta property="og:description" content="{{ $cvDescription }}">
+        <meta property="og:url" content="{{ url()->current() }}">
+        <meta property="og:image" content="{{ url('/og-image.png') }}">
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
+
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="ChromaVale — Your screen, tuned to your eyes">
+        <meta name="twitter:description" content="{{ $cvDescription }}">
+        <meta name="twitter:image" content="{{ url('/og-image.png') }}">
+
         {{-- Inline script to detect system dark mode preference and apply it immediately --}}
         <script>
             (function() {
@@ -38,7 +57,7 @@
 
         @vite(['resources/css/app.css', 'resources/js/app.ts', "resources/js/pages/{$page['component']}.vue"])
         <x-inertia::head>
-            <title>{{ config('app.name', 'Laravel') }}</title>
+            <title>{{ config('app.name', 'ChromaVale') }}</title>
         </x-inertia::head>
     </head>
     <body class="font-sans antialiased">
