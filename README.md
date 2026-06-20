@@ -7,8 +7,13 @@ of your entire screen in real time. From a warm reading mode to personal
 color-blind correction tuned to your exact type and severity. Not one filter
 for everyone, but control made for you.
 
-This repository contains the **marketing site and interactive demo** for
-ChromaVale, built on Laravel + Inertia + Vue 3.
+This repository contains two parts:
+
+- The **marketing site and interactive demo** (Laravel + Inertia + Vue 3), at
+  the repository root.
+- The **real desktop app** (Tauri 2 + Rust), in [`desktop/`](desktop/), which
+  actually adjusts your whole screen. See its
+  [README](desktop/README.md).
 
 ## What's inside
 
@@ -20,8 +25,23 @@ ChromaVale, built on Laravel + Inertia + Vue 3.
     and per-channel red/green/blue) driven by an SVG color filter.
   - Color-blindness simulation (protanopia, deuteranopia, tritanopia) and a
     daltonization correction toggle, so you can experience the core feature.
+- **Download page** (`/download`) - real installer links plus a waitlist for
+  update notifications.
 - Authentication, two-factor, passkeys and account settings from the Laravel
   starter kit, rebranded as ChromaVale.
+
+## Releasing the desktop app
+
+Pushing a version tag builds the installers for Windows and macOS and publishes
+them to a GitHub Release (as a draft to review first):
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The workflow is `.github/workflows/desktop-release.yml`. The `/download` page
+links to the latest release.
 
 ## Tech stack
 

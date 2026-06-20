@@ -34,13 +34,6 @@ const detectedLabel = computed(() =>
           : 'your device',
 );
 
-function choose(platform: Platform) {
-    form.platform = platform;
-    const field = document.getElementById('wl-email');
-    field?.focus();
-    field?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
 function submit() {
     form.post('/waitlist', {
         preserveScroll: true,
@@ -51,18 +44,20 @@ function submit() {
     });
 }
 
+const releaseUrl = 'https://github.com/tanerozg/chromavale/releases/latest';
+
 const platforms = [
     {
         key: 'mac' as Platform,
         name: 'macOS',
         req: 'macOS 12 Monterey or later. Apple silicon and Intel.',
-        size: 'Universal build',
+        size: 'Universal .dmg',
     },
     {
         key: 'windows' as Platform,
         name: 'Windows',
         req: 'Windows 10 and 11, 64-bit.',
-        size: 'x64 installer',
+        size: '.msi and .exe installer',
     },
 ];
 </script>
@@ -122,9 +117,39 @@ const platforms = [
                 <span class="kicker">Download</span>
                 <h1 class="title">Get ChromaVale, free.</h1>
                 <p class="lede">
-                    ChromaVale is launching soon for macOS and Windows. Join the
-                    list and we will email you the moment your build is ready to
-                    download. No spam, just the release.
+                    Free for macOS and Windows. Grab the installer for
+                    {{ detectedLabel }} below, or get the other platform from
+                    the releases page.
+                </p>
+                <div class="dl">
+                    <a
+                        :href="releaseUrl"
+                        target="_blank"
+                        rel="noopener"
+                        class="btn btn-ink btn-lg"
+                        :class="{ first: detected === 'windows' }"
+                    >
+                        <svg viewBox="0 0 16 16" fill="currentColor" class="dl-ico" aria-hidden="true">
+                            <path d="M0 2.2 6.5 1.3v6.2H0V2.2Zm0 11.6 6.5.9V8.5H0v5.3ZM7.3 1.2 16 0v7.5H7.3V1.2Zm0 13.6L16 16V8.5H7.3v6.3Z" />
+                        </svg>
+                        Download for Windows
+                    </a>
+                    <a
+                        :href="releaseUrl"
+                        target="_blank"
+                        rel="noopener"
+                        class="btn btn-ink btn-lg"
+                        :class="{ first: detected === 'mac' }"
+                    >
+                        <svg viewBox="0 0 16 16" fill="currentColor" class="dl-ico" aria-hidden="true">
+                            <path d="M11.18 8.5c-.02-1.5 1.22-2.22 1.28-2.26-.7-1.02-1.79-1.16-2.18-1.18-.93-.09-1.81.54-2.28.54-.47 0-1.2-.53-1.97-.51-1.01.01-1.94.59-2.46 1.49-1.05 1.82-.27 4.51.75 5.99.5.72 1.1 1.53 1.88 1.5.75-.03 1.04-.49 1.95-.49.91 0 1.17.49 1.97.47.81-.01 1.33-.74 1.83-1.46.58-.84.82-1.65.83-1.69-.02-.01-1.6-.61-1.62-2.43Zm-1.5-4.47c.41-.5.69-1.2.61-1.9-.59.02-1.31.39-1.74.89-.38.44-.72 1.15-.63 1.83.66.05 1.34-.33 1.76-.82Z" />
+                        </svg>
+                        Download for macOS
+                    </a>
+                </div>
+                <p class="dl-note">
+                    Builds are not yet code-signed, so your system may show a
+                    SmartScreen or Gatekeeper prompt on first launch.
                 </p>
             </div>
 
@@ -134,15 +159,14 @@ const platforms = [
                     <div class="signup-copy">
                         <span class="badge">
                             <span class="badge-dot"></span>
-                            Launching soon
+                            Stay updated
                         </span>
                         <h2 class="signup-title">
-                            Be first to tune your screen.
+                            Get notified about new versions.
                         </h2>
                         <p class="signup-sub">
-                            We detected
-                            <strong>{{ detectedLabel }}</strong>. We will send
-                            the right build for you.
+                            We will email you when a new ChromaVale build for
+                            <strong>{{ detectedLabel }}</strong> is released.
                         </p>
                     </div>
                     <form class="signup-form" @submit.prevent="submit">
@@ -189,8 +213,8 @@ const platforms = [
                     </span>
                     <h2 class="signup-title">You are on the list.</h2>
                     <p class="signup-sub">
-                        We will email you the {{ detectedLabel }} build as soon
-                        as ChromaVale is ready. Talk soon.
+                        We will email you when the next {{ detectedLabel }}
+                        build is released. Talk soon.
                     </p>
                     <Link href="/" class="btn btn-soft">Back to home</Link>
                 </div>
@@ -238,9 +262,14 @@ const platforms = [
                         </div>
                     </div>
                     <p class="plat-req">{{ p.req }}</p>
-                    <button class="btn btn-soft btn-block" @click="choose(p.key)">
-                        Get notified for {{ p.name }}
-                    </button>
+                    <a
+                        :href="releaseUrl"
+                        target="_blank"
+                        rel="noopener"
+                        class="btn btn-soft btn-block"
+                    >
+                        Download for {{ p.name }}
+                    </a>
                 </article>
             </div>
 
@@ -295,8 +324,34 @@ const platforms = [
 .btn:active {
     transform: translateY(var(--press));
 }
+.btn-lg {
+    padding: 0.95rem 1.4rem;
+    font-size: 1rem;
+    --press: 5px;
+}
 .btn-block {
     width: 100%;
+}
+.dl-ico {
+    width: 1.05em;
+    height: 1.05em;
+}
+
+/* Download buttons in the intro */
+.dl {
+    margin-top: 1.6rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+}
+.dl .btn.first {
+    order: -1;
+}
+.dl-note {
+    margin-top: 0.9rem;
+    font-size: 0.84rem;
+    color: var(--muted);
 }
 .btn-ink {
     background: var(--ink);
