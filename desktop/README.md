@@ -66,6 +66,10 @@ To ship without security warnings you need code signing: an Apple Developer ID
 plus notarization on macOS, and an Authenticode certificate on Windows.
 Unsigned builds still run but show a Gatekeeper / SmartScreen prompt.
 
+The **free** way to avoid the Windows SmartScreen warning is to ship through
+the Microsoft Store as an MSIX (Microsoft re-signs it). See [STORE.md](STORE.md)
+for the full packaging and submission workflow.
+
 ## A note on the gamma ramp
 
 Global gamma-ramp control is how f.lux and Night Light work. Some laptops,
