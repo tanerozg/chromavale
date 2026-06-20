@@ -44,7 +44,10 @@ function submit() {
     });
 }
 
-const releaseUrl = 'https://github.com/tanerozg/chromavale/releases/latest';
+const downloadUrls: Record<Platform, string> = {
+    windows: '/download/windows',
+    mac: '/download/mac',
+};
 
 const platforms = [
     {
@@ -123,9 +126,7 @@ const platforms = [
                 </p>
                 <div class="dl">
                     <a
-                        :href="releaseUrl"
-                        target="_blank"
-                        rel="noopener"
+                        :href="downloadUrls.windows"
                         class="btn btn-ink btn-lg"
                         :class="{ first: detected === 'windows' }"
                     >
@@ -135,9 +136,7 @@ const platforms = [
                         Download for Windows
                     </a>
                     <a
-                        :href="releaseUrl"
-                        target="_blank"
-                        rel="noopener"
+                        :href="downloadUrls.mac"
                         class="btn btn-ink btn-lg"
                         :class="{ first: detected === 'mac' }"
                     >
@@ -263,9 +262,7 @@ const platforms = [
                     </div>
                     <p class="plat-req">{{ p.req }}</p>
                     <a
-                        :href="releaseUrl"
-                        target="_blank"
-                        rel="noopener"
+                        :href="downloadUrls[p.key]"
                         class="btn btn-soft btn-block"
                     >
                         Download for {{ p.name }}

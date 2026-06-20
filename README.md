@@ -40,8 +40,17 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-The workflow is `.github/workflows/desktop-release.yml`. The `/download` page
-links to the latest release.
+The workflow is `.github/workflows/desktop-release.yml`.
+
+### Serving the installer directly
+
+The `/download/{platform}` route (windows or mac) serves the installer as an
+instant download from our own domain when the file is present in
+`storage/app/downloads/` (see `config/download.php` for the expected file
+names). Drop the built installer there during deploy. If the file is absent,
+the route redirects to the configured fallback URL
+(`DOWNLOAD_URL_WINDOWS` / `DOWNLOAD_URL_MAC`, defaulting to the GitHub
+releases page).
 
 ## Tech stack
 
