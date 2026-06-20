@@ -4,17 +4,19 @@ The real ChromaVale desktop app for macOS and Windows, built with
 [Tauri 2](https://tauri.app). The UI is Vue + Vite; the screen color engine is
 Rust.
 
-## What works today (MVP)
+## What works today
 
 - A real-time **color engine** that adjusts your entire screen via the OS gamma
   ramp: color temperature, brightness, gamma, and per-channel red/green/blue.
 - **Presets** (Comfort, Reading, Night, Vivid) and a power toggle.
 - On Windows it uses `SetDeviceGammaRamp`; on macOS `CGSetDisplayTransferByTable`.
+- **Color-blind correction (Windows):** real daltonization for protan, deutan
+  and tritan with an adjustable strength, applied to the whole screen via the
+  Windows Magnification API (`MagSetFullscreenColorEffect`, the same mechanism
+  Windows' own Color Filters use). This is the paid killer feature.
 - The screen is always restored to neutral when the app quits.
 
-This is the foundation. Per-app filtering and personal color-blind
-daltonization (which need a compositor overlay rather than a global gamma ramp)
-are the next milestones.
+Color-blind correction on macOS and per-app filtering are the next milestones.
 
 ## Prerequisites
 

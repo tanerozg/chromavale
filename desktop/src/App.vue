@@ -26,6 +26,16 @@ const activePreset = ref('Neutral');
 const status = ref('');
 const error = ref('');
 
+type CorrectionType = 'none' | 'protan' | 'deutan' | 'tritan';
+const cbType = ref<CorrectionType>('none');
+const cbStrength = ref(1);
+const cbOptions: { key: CorrectionType; label: string }[] = [
+    { key: 'none', label: 'Off' },
+    { key: 'protan', label: 'Protan' },
+    { key: 'deutan', label: 'Deutan' },
+    { key: 'tritan', label: 'Tritan' },
+];
+
 const presets: { name: string; values: Partial<Settings> }[] = [
     { name: 'Neutral', values: { ...NEUTRAL } },
     {
@@ -115,6 +125,31 @@ async function reset() {
     }
 }
 
+let cbTimer: ReturnType<typeof setTimeout> | null = null;
+
+async function applyCorrection() {
+    try {
+        if (cbType.value === 'none') {
+            await invoke('clear_correction');
+        } else {
+            await invoke('apply_correction', {
+                kind: cbType.value,
+                strength: cbStrength.value,
+            });
+        }
+        error.value = '';
+    } catch (e) {
+        error.value = String(e);
+    }
+}
+
+function scheduleCorrection() {
+    if (cbTimer) clearTimeout(cbTimer);
+    cbTimer = setTimeout(applyCorrection, 40);
+}
+
+watch([cbType, cbStrength], scheduleCorrection);
+
 function choosePreset(name: string) {
     const preset = presets.find((p) => p.name === name);
     if (!preset) return;
@@ -148,6 +183,7 @@ watch(
 onMounted(apply);
 onBeforeUnmount(() => {
     if (applyTimer) clearTimeout(applyTimer);
+    if (cbTimer) clearTimeout(cbTimer);
 });
 </script>
 
@@ -243,6 +279,42 @@ onBeforeUnmount(() => {
                     :disabled="!enabled"
                 />
             </div>
+        </section>
+
+        <section class="panel cb">
+            <div class="cb-head">
+                <h2>Color blindness</h2>
+                <span class="cb-tag">Daltonization</span>
+            </div>
+            <div class="seg">
+                <button
+                    v-for="o in cbOptions"
+                    :key="o.key"
+                    class="seg-btn"
+                    :class="{ active: cbType === o.key }"
+                    @click="cbType = o.key"
+                >
+                    {{ o.label }}
+                </button>
+            </div>
+            <div class="ctrl" :class="{ disabled: cbType === 'none' }">
+                <div class="ctrl-head">
+                    <label>Strength</label>
+                    <span class="val">{{ Math.round(cbStrength * 100) }}%</span>
+                </div>
+                <input
+                    v-model.number="cbStrength"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    :disabled="cbType === 'none'"
+                />
+            </div>
+            <p class="cb-note">
+                Remaps colors you confuse into tones you can tell apart, across
+                your whole screen.
+            </p>
         </section>
 
         <footer class="foot">
@@ -442,6 +514,66 @@ input[type='range']:disabled {
 }
 .range.b {
     accent-color: #4da6ff;
+}
+
+/* Color blindness section */
+.cb {
+    margin-top: 12px;
+}
+.cb-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+.cb-head h2 {
+    font-size: 0.92rem;
+    font-weight: 600;
+}
+.cb-tag {
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #b9aaff;
+    background: rgba(107, 91, 240, 0.16);
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+}
+.seg {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.35rem;
+    margin-bottom: 14px;
+}
+.seg-btn {
+    border: 1px solid var(--line);
+    background: #1c1c22;
+    color: var(--muted);
+    border-radius: 9px;
+    padding: 0.45rem 0.3rem;
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.seg-btn:hover {
+    color: var(--ink);
+}
+.seg-btn.active {
+    color: #fff;
+    background: var(--accent);
+    border-color: var(--accent);
+}
+.ctrl.disabled {
+    opacity: 0.5;
+}
+.cb-note {
+    margin-top: 10px;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    color: var(--muted);
 }
 
 .foot {
