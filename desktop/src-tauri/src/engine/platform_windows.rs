@@ -2,7 +2,8 @@
 
 use std::ffi::c_void;
 use windows::Win32::Foundation::HWND;
-use windows::Win32::Graphics::Gdi::{GetDC, ReleaseDC, SetDeviceGammaRamp};
+use windows::Win32::Graphics::Gdi::{GetDC, ReleaseDC};
+use windows::Win32::UI::ColorSystem::SetDeviceGammaRamp;
 
 pub fn apply_ramp(ramp: &[[f32; 256]; 3]) -> Result<(), String> {
     // Windows expects three contiguous [u16; 256] tables (R, G, B).
