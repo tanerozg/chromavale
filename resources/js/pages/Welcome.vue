@@ -41,6 +41,7 @@ const content = {
             colorblind: 'Color blindness',
             pricing: 'Pricing',
             demo: 'Demo',
+            test: 'Free test',
             signIn: 'Sign in',
             dashboard: 'Dashboard',
             download: 'Download free',
@@ -212,6 +213,7 @@ const content = {
             colorblind: 'Kleurenblind',
             pricing: 'Prijzen',
             demo: 'Demo',
+            test: 'Gratis test',
             signIn: 'Inloggen',
             dashboard: 'Dashboard',
             download: 'Download gratis',
@@ -444,6 +446,7 @@ const t = computed(() => content[lang.value]);
                     <a href="#colorblind">{{ t.nav.colorblind }}</a>
                     <a href="#pricing">{{ t.nav.pricing }}</a>
                     <Link href="/try">{{ t.nav.demo }}</Link>
+                    <Link href="/calibrate">{{ t.nav.test }}</Link>
                 </div>
 
                 <div class="nav-actions">

@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
 Route::inertia('try', 'Try')->name('try');
+Route::inertia('calibrate', 'Calibrate')->name('calibrate');
 Route::inertia('download', 'Download')->name('download');
 Route::get('download/{platform}', [DownloadController::class, 'installer'])
     ->whereIn('platform', ['windows', 'mac'])
