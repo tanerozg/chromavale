@@ -4,76 +4,66 @@ The Microsoft Store is the route that removes the "Windows protected your PC"
 (SmartScreen) warning **for free**: you submit an MSIX package and Microsoft
 re-signs it. No paid code-signing certificate is required.
 
-Tauri does not output MSIX directly, so we use Microsoft's official
-[`winapp` CLI](https://learn.microsoft.com/en-us/windows/apps/dev-tools/winapp-cli/guides/tauri)
-to wrap the built `chromavale.exe` into an MSIX. The npm scripts for this are
-already in `package.json` (`msix:dev`, `msix:pack`).
+Tauri does not output MSIX directly, so this folder packages the built
+`chromavale.exe` into an MSIX using the Windows SDK (`makeappx` + `signtool`):
 
-## One-time setup
+- [`AppxManifest.xml`](AppxManifest.xml) - the package manifest (identity,
+  logos, full-trust capability).
+- [`pack.ps1`](pack.ps1) - stages the exe + assets, packs the MSIX, and signs
+  it with a local test certificate.
 
-1. **Install the winapp CLI** (and ensure Rust + Node are present):
+This pipeline is verified working: running `pack.ps1` produces a valid, signed
+`ChromaVale.msix`. The only steps left require a Partner Center account.
 
-   ```powershell
-   winget install microsoft.winappcli --source winget
-   ```
-
-2. **Reserve the app name** in
-   [Partner Center](https://partner.microsoft.com/dashboard) (Windows & Xbox →
-   create a new app). This gives you the values you must use for package
-   identity:
-   - **Package/Identity Name** (e.g. `1234Publisher.ChromaVale`)
-   - **Publisher** (e.g. `CN=ABCD1234-...`)
-   - **Publisher display name**
-
-   A Partner Center developer account is required (a small one-time
-   registration fee may apply).
-
-3. **Generate the manifest and assets** from the `desktop/` folder:
-
-   ```powershell
-   winapp init
-   ```
-
-   This creates `Package.appxmanifest` and an `Assets` folder. Open the
-   manifest and set the **Identity Name**, **Publisher**, and **Publisher
-   display name** to exactly the values from Partner Center. Set the entry
-   point to `chromavale.exe`.
-
-   You can replace the generated logos with the branded ones already produced
-   in `src-tauri/icons/` (`Square150x150Logo.png`, `Square44x44Logo.png`,
-   `StoreLogo.png`, etc.).
-
-## Build and test locally
+## Build a test MSIX locally (already works)
 
 ```powershell
-# From desktop/
-winapp cert generate --if-exists skip   # self-signed dev cert (matches manifest Publisher)
-npm run msix:pack                        # builds release exe and packs the MSIX
-winapp cert install .\devcert.pfx        # trust the dev cert (run as admin, once)
-Add-AppxPackage .\ChromaVale_*.msix      # install and launch from Start menu
+# From desktop/, after: npm run tauri build
+powershell -ExecutionPolicy Bypass -File msix\pack.ps1
 ```
 
-> If you previously ran `npm run msix:dev`, the package may already be
-> registered. Run `winapp unregister` first, then install.
+This creates `msix\ChromaVale.msix`, signed with a self-signed test cert
+(`devcert.pfx`, auto-created, `CN=ChromaVale`). To install it for testing,
+trust that cert once (run as admin), then install:
 
-> When repackaging after changes, bump the `Version` in
-> `Package.appxmanifest` (Windows requires a higher version to update).
+```powershell
+Import-PfxCertificate -FilePath msix\devcert.pfx -CertStoreLocation Cert:\LocalMachine\Root -Password (ConvertTo-SecureString "chromavale" -AsPlainText -Force)
+Add-AppxPackage msix\ChromaVale.msix
+```
 
-## Submit to the Store
+## What only you can do (Partner Center)
 
-1. In Partner Center, create a submission for the reserved app.
-2. Upload the `.msix` (build one per architecture you support, e.g. x64 and
-   Arm64).
-3. Submit. **Microsoft signs the package for you**, so end users install it
-   with no SmartScreen warning.
+1. **Create a developer account** at
+   [partner.microsoft.com](https://partner.microsoft.com/dashboard) and let
+   Microsoft verify your identity (a small one-time registration fee may
+   apply).
+2. **Reserve the app name.** Partner Center then gives you the package identity
+   values under *Product management -> Product identity*:
+   - **Package/Identity Name** (e.g. `1234Publisher.ChromaVale`)
+   - **Publisher** (e.g. `CN=ABCD1234-1234-...`)
+   - **Publisher display name**
+3. **Put those values into `AppxManifest.xml`** (replace `Name`, `Publisher`,
+   `PublisherDisplayName`).
+4. **Pack without signing** (Microsoft signs it):
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File msix\pack.ps1 -SkipSign
+   ```
+
+5. **Submit** `msix\ChromaVale.msix` in Partner Center. Microsoft re-signs it,
+   so end users install with no SmartScreen warning.
 
 ## Notes
 
-- ChromaVale needs the WebView2 runtime; it is present on Windows 11 and
-  available as the Evergreen runtime on Windows 10. Declare it as a dependency
-  if WACK (Windows App Certification Kit) flags it.
-- The gamma-ramp and Magnification color features used by the engine work the
-  same inside a packaged (MSIX) app as in the plain `.exe`.
-- For direct downloads from chromavale.com (outside the Store), the
+- Bump the `Version` in `AppxManifest.xml` (4 parts, e.g. `0.2.0.0`) for each
+  new submission.
+- Build one package per architecture you support (x64 shown here; add Arm64 if
+  needed).
+- ChromaVale needs the WebView2 runtime: present on Windows 11, available as the
+  Evergreen runtime on Windows 10. If WACK (Windows App Certification Kit)
+  flags it, declare it as a package dependency.
+- The gamma-ramp, Magnification and foreground-app features work the same inside
+  a packaged (MSIX) app as in the plain `.exe`.
+- For direct `.exe` downloads from chromavale.com (outside the Store), the
   SmartScreen warning can only be removed with a paid signing option; see the
-  notes in the project root `README.md`.
+  project root `README.md`.

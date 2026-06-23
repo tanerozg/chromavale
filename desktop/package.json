@@ -7,9 +7,7 @@
         "dev": "vite",
         "build": "vue-tsc --noEmit && vite build",
         "preview": "vite preview",
-        "tauri": "tauri",
-        "msix:dev": "cargo build --manifest-path src-tauri/Cargo.toml && (if not exist msix-stage mkdir msix-stage) && copy /Y src-tauri\\target\\debug\\chromavale.exe msix-stage\\ >nul && winapp run .\\msix-stage",
-        "msix:pack": "npm run tauri -- build && (if not exist msix-stage mkdir msix-stage) && copy /Y src-tauri\\target\\release\\chromavale.exe msix-stage\\ >nul && winapp pack .\\msix-stage --cert .\\devcert.pfx"
+        "tauri": "tauri"
     },
     "dependencies": {
         "@tauri-apps/api": "^2.0.0",
