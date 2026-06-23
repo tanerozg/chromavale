@@ -3,7 +3,7 @@
 //! `Settings` describe the desired look; `apply` builds a gamma ramp and
 //! pushes it to the display, `reset` restores a neutral ramp.
 
-pub mod correction;
+pub mod filters;
 mod ramp;
 
 use serde::Deserialize;

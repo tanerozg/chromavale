@@ -26,14 +26,25 @@ const activePreset = ref('Neutral');
 const status = ref('');
 const error = ref('');
 
-type CorrectionType = 'none' | 'protan' | 'deutan' | 'tritan';
-const cbType = ref<CorrectionType>('none');
-const cbStrength = ref(1);
-const cbOptions: { key: CorrectionType; label: string }[] = [
+type FilterKind =
+    | 'none'
+    | 'protan'
+    | 'deutan'
+    | 'tritan'
+    | 'grayscale'
+    | 'grayscale-inverted'
+    | 'inverted';
+const filterKind = ref<FilterKind>('none');
+const intensity = ref(1);
+const colorBoost = ref(1);
+const filterOptions: { key: FilterKind; label: string }[] = [
     { key: 'none', label: 'Off' },
-    { key: 'protan', label: 'Protan' },
-    { key: 'deutan', label: 'Deutan' },
-    { key: 'tritan', label: 'Tritan' },
+    { key: 'deutan', label: 'Red-green (deuteranopia)' },
+    { key: 'protan', label: 'Red-green (protanopia)' },
+    { key: 'tritan', label: 'Blue-yellow (tritanopia)' },
+    { key: 'grayscale', label: 'Grayscale' },
+    { key: 'grayscale-inverted', label: 'Grayscale inverted' },
+    { key: 'inverted', label: 'Inverted' },
 ];
 
 const presets: { name: string; values: Partial<Settings> }[] = [
@@ -125,16 +136,17 @@ async function reset() {
     }
 }
 
-let cbTimer: ReturnType<typeof setTimeout> | null = null;
+let filterTimer: ReturnType<typeof setTimeout> | null = null;
 
-async function applyCorrection() {
+async function applyFilter() {
     try {
-        if (cbType.value === 'none') {
-            await invoke('clear_correction');
+        if (filterKind.value === 'none' && colorBoost.value === 1) {
+            await invoke('clear_filter');
         } else {
-            await invoke('apply_correction', {
-                kind: cbType.value,
-                strength: cbStrength.value,
+            await invoke('apply_filter', {
+                kind: filterKind.value,
+                strength: intensity.value,
+                colorBoost: colorBoost.value,
             });
         }
         error.value = '';
@@ -143,12 +155,12 @@ async function applyCorrection() {
     }
 }
 
-function scheduleCorrection() {
-    if (cbTimer) clearTimeout(cbTimer);
-    cbTimer = setTimeout(applyCorrection, 40);
+function scheduleFilter() {
+    if (filterTimer) clearTimeout(filterTimer);
+    filterTimer = setTimeout(applyFilter, 40);
 }
 
-watch([cbType, cbStrength], scheduleCorrection);
+watch([filterKind, intensity, colorBoost], scheduleFilter);
 
 function choosePreset(name: string) {
     const preset = presets.find((p) => p.name === name);
@@ -183,7 +195,7 @@ watch(
 onMounted(apply);
 onBeforeUnmount(() => {
     if (applyTimer) clearTimeout(applyTimer);
-    if (cbTimer) clearTimeout(cbTimer);
+    if (filterTimer) clearTimeout(filterTimer);
 });
 </script>
 
@@ -283,37 +295,51 @@ onBeforeUnmount(() => {
 
         <section class="panel cb">
             <div class="cb-head">
-                <h2>Color blindness</h2>
+                <h2>Screen filter</h2>
                 <span class="cb-tag">Daltonization</span>
             </div>
-            <div class="seg">
+            <div class="filter-list">
                 <button
-                    v-for="o in cbOptions"
+                    v-for="o in filterOptions"
                     :key="o.key"
-                    class="seg-btn"
-                    :class="{ active: cbType === o.key }"
-                    @click="cbType = o.key"
+                    class="filter-opt"
+                    :class="{ active: filterKind === o.key }"
+                    @click="filterKind = o.key"
                 >
+                    <span class="radio"></span>
                     {{ o.label }}
                 </button>
             </div>
-            <div class="ctrl" :class="{ disabled: cbType === 'none' }">
+            <div class="ctrl" :class="{ disabled: filterKind === 'none' }">
                 <div class="ctrl-head">
-                    <label>Strength</label>
-                    <span class="val">{{ Math.round(cbStrength * 100) }}%</span>
+                    <label>Intensity</label>
+                    <span class="val">{{ Math.round(intensity * 100) }}%</span>
                 </div>
                 <input
-                    v-model.number="cbStrength"
+                    v-model.number="intensity"
                     type="range"
                     min="0"
                     max="1"
                     step="0.01"
-                    :disabled="cbType === 'none'"
+                    :disabled="filterKind === 'none'"
+                />
+            </div>
+            <div class="ctrl">
+                <div class="ctrl-head">
+                    <label>Color boost</label>
+                    <span class="val">{{ Math.round(colorBoost * 100) }}%</span>
+                </div>
+                <input
+                    v-model.number="colorBoost"
+                    type="range"
+                    min="1"
+                    max="2"
+                    step="0.01"
                 />
             </div>
             <p class="cb-note">
-                Remaps colors you confuse into tones you can tell apart, across
-                your whole screen.
+                Color-blind modes remap colors you confuse into tones you can
+                tell apart. Color boost makes every color more vivid.
             </p>
         </section>
 
@@ -540,31 +566,55 @@ input[type='range']:disabled {
     padding: 0.2rem 0.5rem;
     border-radius: 999px;
 }
-.seg {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.35rem;
+.filter-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
     margin-bottom: 14px;
 }
-.seg-btn {
-    border: 1px solid var(--line);
-    background: #1c1c22;
+.filter-opt {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    border: 1px solid transparent;
+    background: transparent;
     color: var(--muted);
     border-radius: 9px;
-    padding: 0.45rem 0.3rem;
+    padding: 0.5rem 0.6rem;
     font: inherit;
-    font-size: 0.78rem;
-    font-weight: 600;
+    font-size: 0.84rem;
+    font-weight: 500;
+    text-align: left;
     cursor: pointer;
-    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    transition: color 0.15s, background 0.15s;
 }
-.seg-btn:hover {
+.filter-opt:hover {
     color: var(--ink);
+    background: #1c1c22;
 }
-.seg-btn.active {
+.filter-opt.active {
     color: #fff;
-    background: var(--accent);
+    background: #1c1c22;
+    border-color: rgba(107, 91, 240, 0.45);
+}
+.radio {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #43434c;
+    position: relative;
+    transition: border-color 0.15s;
+}
+.filter-opt.active .radio {
     border-color: var(--accent);
+}
+.filter-opt.active .radio::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    border-radius: 50%;
+    background: var(--accent);
 }
 .ctrl.disabled {
     opacity: 0.5;
