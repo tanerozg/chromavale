@@ -38,7 +38,12 @@ Rust.
   drives the global engine rather than an overlay.
 - The screen is always restored to neutral when the app quits.
 
-Color-blind correction on macOS and per-app filtering are the next milestones.
+- **Pro licensing:** free features (color engine, comfort presets, gaming
+  looks, grayscale/inverted) are always available; Pro features (color-blind
+  calibration + correction, per-app profiles, night schedule, autostart) unlock
+  with a license key, validated against chromavale.com and device-bound.
+
+Color-blind correction on macOS is the next milestone.
 
 ## Tests
 

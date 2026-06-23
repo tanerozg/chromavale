@@ -16,6 +16,7 @@ import {
     isEnabled as isAutostartEnabled,
 } from '@tauri-apps/plugin-autostart';
 import Calibration from './Calibration.vue';
+import ProModal from './ProModal.vue';
 
 type Settings = {
     temperature: number; // Kelvin
@@ -40,6 +41,13 @@ const enabled = ref(true);
 const activePreset = ref('Neutral');
 const status = ref('');
 const error = ref('');
+
+// --- Pro licensing state (logic further down) ---
+const pro = ref(false);
+const licenseKey = ref('');
+const licenseEmail = ref('');
+const deviceId = ref('');
+const proModal = ref(false);
 
 // --- Night warmth schedule ---
 const scheduleEnabled = ref(false);
@@ -95,15 +103,23 @@ type FilterKind =
 const filterKind = ref<FilterKind>('none');
 const intensity = ref(1);
 const colorBoost = ref(1);
-const filterOptions: { key: FilterKind; label: string }[] = [
+const filterOptions: { key: FilterKind; label: string; pro?: boolean }[] = [
     { key: 'none', label: 'Off' },
-    { key: 'deutan', label: 'Red-green (deuteranopia)' },
-    { key: 'protan', label: 'Red-green (protanopia)' },
-    { key: 'tritan', label: 'Blue-yellow (tritanopia)' },
+    { key: 'deutan', label: 'Red-green (deuteranopia)', pro: true },
+    { key: 'protan', label: 'Red-green (protanopia)', pro: true },
+    { key: 'tritan', label: 'Blue-yellow (tritanopia)', pro: true },
     { key: 'grayscale', label: 'Grayscale' },
     { key: 'grayscale-inverted', label: 'Grayscale inverted' },
     { key: 'inverted', label: 'Inverted' },
 ];
+
+function selectFilter(o: { key: FilterKind; pro?: boolean }) {
+    if (o.pro && !pro.value) {
+        proModal.value = true;
+        return;
+    }
+    filterKind.value = o.key;
+}
 
 const presets: { name: string; values: Partial<Settings> }[] = [
     { name: 'Neutral', values: { ...NEUTRAL } },
@@ -379,6 +395,10 @@ type SavedState = {
     scheduleEnd: string;
     nightTemp: number;
     rules: AppRule[];
+    pro: boolean;
+    licenseKey: string;
+    licenseEmail: string;
+    deviceId: string;
 };
 
 let store: Awaited<ReturnType<typeof load>> | null = null;
@@ -398,6 +418,10 @@ async function persist() {
         scheduleEnd: scheduleEnd.value,
         nightTemp: nightTemp.value,
         rules: JSON.parse(JSON.stringify(rules.value)),
+        pro: pro.value,
+        licenseKey: licenseKey.value,
+        licenseEmail: licenseEmail.value,
+        deviceId: deviceId.value,
     };
     try {
         await store.set('state', state);
@@ -423,6 +447,7 @@ watch(
         scheduleStart,
         scheduleEnd,
         nightTemp,
+        pro,
     ],
     schedulePersist,
     { deep: true },
@@ -443,6 +468,30 @@ async function toggleAutostart() {
     } catch (e) {
         error.value = String(e);
     }
+}
+
+// --- Pro licensing ---
+function ensureDeviceId() {
+    if (!deviceId.value) {
+        deviceId.value =
+            (typeof crypto !== 'undefined' && crypto.randomUUID
+                ? crypto.randomUUID()
+                : Math.random().toString(36).slice(2)) +
+            Date.now().toString(36);
+    }
+}
+
+function requirePro(action: () => void) {
+    if (pro.value) action();
+    else proModal.value = true;
+}
+
+function onActivated(result: { key: string; email: string }) {
+    pro.value = true;
+    licenseKey.value = result.key;
+    licenseEmail.value = result.email;
+    proModal.value = false;
+    status.value = 'Pro unlocked';
 }
 
 // --- Calibration ---
@@ -515,11 +564,19 @@ onMounted(async () => {
                 nightTemp.value = saved.nightTemp;
             }
             if (saved.rules) rules.value = saved.rules;
+            if (saved.pro !== undefined) {
+                pro.value = saved.pro;
+                licenseKey.value = saved.licenseKey ?? '';
+                licenseEmail.value = saved.licenseEmail ?? '';
+                deviceId.value = saved.deviceId ?? '';
+            }
         }
     } catch {
         // No saved state yet, or store unavailable: start from defaults.
     }
+    ensureDeviceId();
     restored = true;
+    schedulePersist(); // make sure the device id is saved
 
     tickSchedule();
     scheduleInterval = setInterval(tickSchedule, 30000);
@@ -585,15 +642,21 @@ onBeforeUnmount(() => {
                 </span>
                 <span class="name">ChromaVale</span>
             </div>
-            <button
-                class="power"
-                :class="{ on: enabled }"
-                @click="toggleEnabled"
-                title="Toggle ChromaVale (Ctrl+Alt+C)"
-            >
-                <span class="dot"></span>
-                {{ enabled ? 'On' : 'Off' }}
-            </button>
+            <div class="top-right">
+                <span v-if="pro" class="pro-pill" title="ChromaVale Pro">PRO</span>
+                <button v-else class="unlock" @click="proModal = true">
+                    Unlock Pro
+                </button>
+                <button
+                    class="power"
+                    :class="{ on: enabled }"
+                    @click="toggleEnabled"
+                    title="Toggle ChromaVale (Ctrl+Alt+C)"
+                >
+                    <span class="dot"></span>
+                    {{ enabled ? 'On' : 'Off' }}
+                </button>
+            </div>
         </header>
 
         <p class="hotkey-hint">
@@ -687,12 +750,16 @@ onBeforeUnmount(() => {
                 <h2>Accessibility</h2>
                 <span class="cb-tag">Color blindness</span>
             </div>
-            <button class="cal-btn" @click="calibrating = true">
+            <button
+                class="cal-btn"
+                @click="requirePro(() => (calibrating = true))"
+            >
                 <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.7" />
                     <circle cx="12" cy="12" r="3" fill="currentColor" />
                 </svg>
                 Find my filter (test)
+                <span v-if="!pro" class="lock">PRO</span>
             </button>
             <div class="filter-list">
                 <button
@@ -700,10 +767,11 @@ onBeforeUnmount(() => {
                     :key="o.key"
                     class="filter-opt"
                     :class="{ active: filterKind === o.key }"
-                    @click="filterKind = o.key"
+                    @click="selectFilter(o)"
                 >
                     <span class="radio"></span>
                     {{ o.label }}
+                    <span v-if="o.pro && !pro" class="lock sm">PRO</span>
                 </button>
             </div>
             <div class="ctrl" :class="{ disabled: filterKind === 'none' }">
@@ -729,7 +797,15 @@ onBeforeUnmount(() => {
         <section class="panel cb">
             <div class="cb-head">
                 <h2>Per-app profiles</h2>
-                <span class="cb-tag" :class="{ live: activeOverride }">
+                <span
+                    v-if="!pro"
+                    class="cb-tag"
+                    role="button"
+                    @click="proModal = true"
+                >
+                    PRO
+                </span>
+                <span v-else class="cb-tag" :class="{ live: activeOverride }">
                     {{ activeOverride ? 'Auto active' : 'Automation' }}
                 </span>
             </div>
@@ -739,7 +815,7 @@ onBeforeUnmount(() => {
                 <button
                     v-if="currentApp && !activeRule"
                     class="app-add"
-                    @click="addRuleForCurrent"
+                    @click="requirePro(addRuleForCurrent)"
                 >
                     + Add rule
                 </button>
@@ -767,7 +843,15 @@ onBeforeUnmount(() => {
         <section class="panel cb">
             <div class="cb-head">
                 <h2>Night schedule</h2>
-                <span class="cb-tag" :class="{ live: scheduleActive }">
+                <span
+                    v-if="!pro"
+                    class="cb-tag"
+                    role="button"
+                    @click="proModal = true"
+                >
+                    PRO
+                </span>
+                <span v-else class="cb-tag" :class="{ live: scheduleActive }">
                     {{ scheduleActive ? 'Active now' : 'Auto warmth' }}
                 </span>
             </div>
@@ -778,7 +862,7 @@ onBeforeUnmount(() => {
                     :class="{ on: scheduleEnabled }"
                     role="switch"
                     :aria-checked="scheduleEnabled"
-                    @click="scheduleEnabled = !scheduleEnabled"
+                    @click="requirePro(() => (scheduleEnabled = !scheduleEnabled))"
                 >
                     <span class="knob2"></span>
                 </button>
@@ -823,13 +907,16 @@ onBeforeUnmount(() => {
         </section>
 
         <div class="option-row">
-            <span>Start with Windows</span>
+            <span>
+                Start with Windows
+                <span v-if="!pro" class="lock sm">PRO</span>
+            </span>
             <button
                 class="mini-toggle"
                 :class="{ on: autostart }"
                 role="switch"
                 :aria-checked="autostart"
-                @click="toggleAutostart"
+                @click="requirePro(toggleAutostart)"
             >
                 <span class="knob2"></span>
             </button>
@@ -845,6 +932,13 @@ onBeforeUnmount(() => {
             v-if="calibrating"
             @complete="onCalibrated"
             @cancel="calibrating = false"
+        />
+
+        <ProModal
+            v-if="proModal"
+            :device-id="deviceId"
+            @close="proModal = false"
+            @activated="onActivated"
         />
     </div>
 </template>
@@ -892,6 +986,47 @@ onBeforeUnmount(() => {
     font-weight: 600;
     font-size: 1.05rem;
     letter-spacing: -0.02em;
+}
+.top-right {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.pro-pill {
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #fff;
+    background: linear-gradient(135deg, #6b5bf0, #9b6be5);
+    padding: 0.25rem 0.5rem;
+    border-radius: 999px;
+}
+.unlock {
+    border: 1px solid rgba(107, 91, 240, 0.55);
+    background: rgba(107, 91, 240, 0.16);
+    color: #c2b8ff;
+    border-radius: 999px;
+    padding: 0.3rem 0.7rem;
+    font: inherit;
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.unlock:hover {
+    background: rgba(107, 91, 240, 0.26);
+}
+.lock {
+    margin-left: auto;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: #c2b8ff;
+    background: rgba(107, 91, 240, 0.18);
+    padding: 0.1rem 0.35rem;
+    border-radius: 5px;
+}
+.lock.sm {
+    font-size: 0.58rem;
 }
 .power {
     display: inline-flex;
