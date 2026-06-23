@@ -8,7 +8,10 @@ Rust.
 
 - A real-time **color engine** that adjusts your entire screen via the OS gamma
   ramp: color temperature, brightness, gamma, and per-channel red/green/blue.
-- **Presets** (Comfort, Reading, Night, Vivid) and a power toggle.
+- **Comfort presets** (Comfort, Reading, Night) and a power toggle.
+- **Gaming & vibe** looks (Vibrant, Neon, Cinematic, Cozy, Frost) plus a
+  Vibrance control, to make games look bold and saturated. Kept separate from
+  the accessibility color-blind filters.
 - On Windows it uses `SetDeviceGammaRamp`; on macOS `CGSetDisplayTransferByTable`.
 - **Screen filters (Windows):** real daltonization for protan, deutan and
   tritan with adjustable intensity, plus Grayscale, Grayscale inverted,

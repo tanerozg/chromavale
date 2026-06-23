@@ -107,11 +107,66 @@ const presets: { name: string; values: Partial<Settings> }[] = [
         name: 'Night',
         values: { temperature: 3200, brightness: 0.85, red: 1, green: 0.92, blue: 0.72, gamma: 1 },
     },
+];
+
+// Gaming looks: bold, vivid color grades meant to make games pop. Separate
+// from the accessibility color-blind filters below.
+const gamingPresets: {
+    name: string;
+    settings: Settings;
+    colorBoost: number;
+    bar: string;
+}[] = [
     {
-        name: 'Vivid',
-        values: { temperature: 6500, brightness: 1.05, red: 1, green: 1, blue: 1, gamma: 0.92 },
+        name: 'Vibrant',
+        settings: { temperature: 6500, brightness: 1, red: 1, green: 1, blue: 1, gamma: 1.06 },
+        colorBoost: 1.5,
+        bar: 'linear-gradient(90deg,#ff5e62,#ffca45,#36d97b,#4da6ff)',
+    },
+    {
+        name: 'Neon',
+        settings: { temperature: 7200, brightness: 1, red: 1, green: 1, blue: 1.05, gamma: 1.14 },
+        colorBoost: 1.75,
+        bar: 'linear-gradient(90deg,#b14bff,#4da6ff,#21f0c0)',
+    },
+    {
+        name: 'Cinematic',
+        settings: { temperature: 5200, brightness: 0.98, red: 1.05, green: 1, blue: 0.95, gamma: 1.12 },
+        colorBoost: 1.25,
+        bar: 'linear-gradient(90deg,#2c7da0,#e9a23b,#d2603f)',
+    },
+    {
+        name: 'Cozy',
+        settings: { temperature: 3900, brightness: 0.98, red: 1, green: 1, blue: 1, gamma: 1 },
+        colorBoost: 1.15,
+        bar: 'linear-gradient(90deg,#ff9a3c,#ffce6b)',
+    },
+    {
+        name: 'Frost',
+        settings: { temperature: 8000, brightness: 1, red: 1, green: 1, blue: 1.05, gamma: 1.08 },
+        colorBoost: 1.4,
+        bar: 'linear-gradient(90deg,#7fe7ff,#4da6ff,#9b8cff)',
     },
 ];
+
+function applyGamingPreset(p: (typeof gamingPresets)[number]) {
+    Object.assign(settings, p.settings);
+    filterKind.value = 'none';
+    colorBoost.value = p.colorBoost;
+    enabled.value = true;
+}
+
+const activeGaming = computed(
+    () =>
+        gamingPresets.find(
+            (p) =>
+                filterKind.value === 'none' &&
+                colorBoost.value === p.colorBoost &&
+                (Object.keys(p.settings) as (keyof Settings)[]).every(
+                    (k) => settings[k] === p.settings[k],
+                ),
+        )?.name ?? '',
+);
 
 const sliders: {
     key: keyof Settings;
@@ -446,6 +501,7 @@ onBeforeUnmount(() => {
             <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>C</kbd>
         </p>
 
+        <div class="group-label">Comfort</div>
         <section class="presets">
             <button
                 v-for="p in presets"
@@ -457,6 +513,36 @@ onBeforeUnmount(() => {
                 {{ p.name }}
             </button>
         </section>
+
+        <div class="group-label">
+            Gaming &amp; vibe
+            <span class="group-tag">make games pop</span>
+        </div>
+        <section class="presets gaming">
+            <button
+                v-for="p in gamingPresets"
+                :key="p.name"
+                class="preset gpreset"
+                :class="{ active: activeGaming === p.name }"
+                @click="applyGamingPreset(p)"
+            >
+                <span class="gbar" :style="{ background: p.bar }"></span>
+                {{ p.name }}
+            </button>
+        </section>
+        <div class="ctrl gvibrance">
+            <div class="ctrl-head">
+                <label>Vibrance</label>
+                <span class="val">{{ Math.round(colorBoost * 100) }}%</span>
+            </div>
+            <input
+                v-model.number="colorBoost"
+                type="range"
+                min="1"
+                max="2"
+                step="0.01"
+            />
+        </div>
 
         <section class="panel" :class="{ disabled: !enabled }">
             <div v-for="s in sliders" :key="s.key" class="ctrl">
@@ -498,8 +584,8 @@ onBeforeUnmount(() => {
 
         <section class="panel cb">
             <div class="cb-head">
-                <h2>Screen filter</h2>
-                <span class="cb-tag">Daltonization</span>
+                <h2>Accessibility</h2>
+                <span class="cb-tag">Color blindness</span>
             </div>
             <button class="cal-btn" @click="calibrating = true">
                 <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -534,22 +620,9 @@ onBeforeUnmount(() => {
                     :disabled="filterKind === 'none'"
                 />
             </div>
-            <div class="ctrl">
-                <div class="ctrl-head">
-                    <label>Color boost</label>
-                    <span class="val">{{ Math.round(colorBoost * 100) }}%</span>
-                </div>
-                <input
-                    v-model.number="colorBoost"
-                    type="range"
-                    min="1"
-                    max="2"
-                    step="0.01"
-                />
-            </div>
             <p class="cb-note">
                 Color-blind modes remap colors you confuse into tones you can
-                tell apart. Color boost makes every color more vivid.
+                tell apart. For vivid gaming looks, use Gaming &amp; vibe above.
             </p>
         </section>
 
@@ -726,10 +799,50 @@ onBeforeUnmount(() => {
     padding: 0.05rem 0.3rem;
 }
 
+.group-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 4px 2px 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+}
+.group-tag {
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #b9aaff;
+}
 .presets {
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem;
+}
+.presets.gaming {
+    margin-bottom: 12px;
+}
+.gpreset {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding-left: 0.5rem;
+}
+.gbar {
+    width: 26px;
+    height: 10px;
+    border-radius: 4px;
+    flex: none;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+.gpreset.active {
+    border-color: rgba(107, 91, 240, 0.6);
+}
+.gvibrance {
+    margin-bottom: 4px;
 }
 .preset {
     border: 1px solid var(--line);
