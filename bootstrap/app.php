@@ -22,6 +22,13 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
+
+        // Stripe webhook and the desktop app's license endpoint are called
+        // without a CSRF token.
+        $middleware->validateCsrfTokens(except: [
+            'stripe/webhook',
+            'api/license/activate',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

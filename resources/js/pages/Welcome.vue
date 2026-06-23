@@ -963,9 +963,9 @@ const t = computed(() => content[lang.value]);
                                 <span class="check on"></span>{{ p }}
                             </li>
                         </ul>
-                        <Link href="/download" class="btn btn-accent btn-block btn-lg">
+                        <a href="/checkout/pro" class="btn btn-accent btn-block btn-lg">
                             {{ t.pricing.pro.cta }}
-                        </Link>
+                        </a>
                         <p class="plan-fine">{{ t.pricing.pro.fine }}</p>
                     </article>
                 </div>
