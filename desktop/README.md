@@ -15,6 +15,10 @@ Rust.
   Inverted and an independent Color Boost, applied to the whole screen via the
   Windows Magnification API (`MagSetFullscreenColorEffect`, the same mechanism
   Windows' own Color Filters use). Matches and exceeds the built-in panel.
+- **Calibration test:** a short interactive test ("Find my filter") that finds
+  the color-blindness type and severity using iso-luminant dot discrimination,
+  refines protan vs deutan with a preview, and applies the matching correction
+  automatically.
 - **Global hotkey:** toggle ChromaVale on/off from anywhere with `Ctrl+Alt+C`.
 - **System tray:** the app runs in the background; closing the window hides it
   to the tray (right-click for Show / Toggle / Quit) so the hotkey and filters

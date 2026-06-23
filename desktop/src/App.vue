@@ -8,6 +8,7 @@ import {
     disable as disableAutostart,
     isEnabled as isAutostartEnabled,
 } from '@tauri-apps/plugin-autostart';
+import Calibration from './Calibration.vue';
 
 type Settings = {
     temperature: number; // Kelvin
@@ -226,6 +227,19 @@ async function toggleAutostart() {
     }
 }
 
+// --- Calibration ---
+const calibrating = ref(false);
+
+async function onCalibrated(result: { kind: FilterKind; intensity: number }) {
+    filterKind.value = result.kind;
+    intensity.value = result.intensity;
+    enabled.value = true;
+    calibrating.value = false;
+    await apply();
+    await applyFilter();
+    status.value = 'Calibration applied';
+}
+
 function choosePreset(name: string) {
     const preset = presets.find((p) => p.name === name);
     if (!preset) return;
@@ -407,6 +421,13 @@ onBeforeUnmount(() => {
                 <h2>Screen filter</h2>
                 <span class="cb-tag">Daltonization</span>
             </div>
+            <button class="cal-btn" @click="calibrating = true">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.7" />
+                    <circle cx="12" cy="12" r="3" fill="currentColor" />
+                </svg>
+                Find my filter (test)
+            </button>
             <div class="filter-list">
                 <button
                     v-for="o in filterOptions"
@@ -470,6 +491,12 @@ onBeforeUnmount(() => {
             <span v-if="error" class="msg err">{{ error }}</span>
             <span v-else class="msg">{{ status }}</span>
         </footer>
+
+        <Calibration
+            v-if="calibrating"
+            @complete="onCalibrated"
+            @cancel="calibrating = false"
+        />
     </div>
 </template>
 
@@ -704,6 +731,32 @@ input[type='range']:disabled {
     padding: 0.2rem 0.5rem;
     border-radius: 999px;
 }
+.cal-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    margin-bottom: 14px;
+    padding: 0.65rem 1rem;
+    border-radius: 11px;
+    border: 1px solid rgba(107, 91, 240, 0.5);
+    background: rgba(107, 91, 240, 0.14);
+    color: #c2b8ff;
+    font: inherit;
+    font-size: 0.86rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.cal-btn:hover {
+    background: rgba(107, 91, 240, 0.22);
+}
+.cal-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
 .filter-list {
     display: flex;
     flex-direction: column;
