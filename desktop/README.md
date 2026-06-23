@@ -27,6 +27,8 @@ Rust.
   state are saved and reapplied on the next launch.
 - **Start with Windows:** optional launch at login (starts hidden in the tray)
   so your screen is tuned the moment you log in.
+- **Night schedule:** automatically warms the screen during a chosen time
+  window (e.g. 21:00-07:00), running in the background.
 - The screen is always restored to neutral when the app quits.
 
 Color-blind correction on macOS and per-app filtering are the next milestones.

@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { reactive, ref, watch, onMounted, onBeforeUnmount } from 'vue';
+import {
+    reactive,
+    ref,
+    computed,
+    watch,
+    onMounted,
+    onBeforeUnmount,
+} from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { load } from '@tauri-apps/plugin-store';
@@ -33,6 +40,37 @@ const enabled = ref(true);
 const activePreset = ref('Neutral');
 const status = ref('');
 const error = ref('');
+
+// --- Night warmth schedule ---
+const scheduleEnabled = ref(false);
+const scheduleStart = ref('21:00');
+const scheduleEnd = ref('07:00');
+const nightTemp = ref(3400);
+const scheduleActive = ref(false);
+let scheduleInterval: ReturnType<typeof setInterval> | null = null;
+
+const effectiveTemp = computed(() =>
+    scheduleActive.value ? nightTemp.value : settings.temperature,
+);
+
+function parseHM(value: string): number {
+    const [h, m] = value.split(':').map(Number);
+    return (h || 0) * 60 + (m || 0);
+}
+function nowInWindow(): boolean {
+    if (!scheduleEnabled.value) return false;
+    const now = new Date();
+    const mins = now.getHours() * 60 + now.getMinutes();
+    const start = parseHM(scheduleStart.value);
+    const end = parseHM(scheduleEnd.value);
+    if (start === end) return false;
+    return start < end
+        ? mins >= start && mins < end
+        : mins >= start || mins < end; // overnight window
+}
+function tickSchedule() {
+    scheduleActive.value = nowInWindow();
+}
 
 type FilterKind =
     | 'none'
@@ -120,9 +158,13 @@ let applyTimer: ReturnType<typeof setTimeout> | null = null;
 async function apply() {
     if (!enabled.value) return;
     try {
-        await invoke('apply_color', { settings: { ...settings } });
+        await invoke('apply_color', {
+            settings: { ...settings, temperature: effectiveTemp.value },
+        });
         error.value = '';
-        status.value = 'Applied to your screen';
+        status.value = scheduleActive.value
+            ? 'Night warmth active'
+            : 'Applied to your screen';
     } catch (e) {
         error.value = String(e);
         status.value = '';
@@ -171,6 +213,14 @@ function scheduleFilter() {
 
 watch([filterKind, intensity, colorBoost], scheduleFilter);
 
+// Re-evaluate the schedule when its config changes; re-apply when it flips
+// or its warmth target changes while active.
+watch([scheduleEnabled, scheduleStart, scheduleEnd], tickSchedule);
+watch(scheduleActive, scheduleApply);
+watch(nightTemp, () => {
+    if (scheduleActive.value) scheduleApply();
+});
+
 // --- Persistence: remember everything across launches ---
 type SavedState = {
     settings: Settings;
@@ -178,6 +228,10 @@ type SavedState = {
     filterKind: FilterKind;
     intensity: number;
     colorBoost: number;
+    scheduleEnabled: boolean;
+    scheduleStart: string;
+    scheduleEnd: string;
+    nightTemp: number;
 };
 
 let store: Awaited<ReturnType<typeof load>> | null = null;
@@ -192,6 +246,10 @@ async function persist() {
         filterKind: filterKind.value,
         intensity: intensity.value,
         colorBoost: colorBoost.value,
+        scheduleEnabled: scheduleEnabled.value,
+        scheduleStart: scheduleStart.value,
+        scheduleEnd: scheduleEnd.value,
+        nightTemp: nightTemp.value,
     };
     try {
         await store.set('state', state);
@@ -206,9 +264,21 @@ function schedulePersist() {
     persistTimer = setTimeout(persist, 300);
 }
 
-watch([settings, enabled, filterKind, intensity, colorBoost], schedulePersist, {
-    deep: true,
-});
+watch(
+    [
+        settings,
+        enabled,
+        filterKind,
+        intensity,
+        colorBoost,
+        scheduleEnabled,
+        scheduleStart,
+        scheduleEnd,
+        nightTemp,
+    ],
+    schedulePersist,
+    { deep: true },
+);
 
 // --- Autostart ---
 const autostart = ref(false);
@@ -289,11 +359,20 @@ onMounted(async () => {
             filterKind.value = saved.filterKind;
             intensity.value = saved.intensity;
             colorBoost.value = saved.colorBoost;
+            if (saved.scheduleEnabled !== undefined) {
+                scheduleEnabled.value = saved.scheduleEnabled;
+                scheduleStart.value = saved.scheduleStart;
+                scheduleEnd.value = saved.scheduleEnd;
+                nightTemp.value = saved.nightTemp;
+            }
         }
     } catch {
         // No saved state yet, or store unavailable: start from defaults.
     }
     restored = true;
+
+    tickSchedule();
+    scheduleInterval = setInterval(tickSchedule, 30000);
 
     await apply();
     await applyFilter();
@@ -312,6 +391,7 @@ onBeforeUnmount(() => {
     if (applyTimer) clearTimeout(applyTimer);
     if (filterTimer) clearTimeout(filterTimer);
     if (persistTimer) clearTimeout(persistTimer);
+    if (scheduleInterval) clearInterval(scheduleInterval);
     if (unlistenToggle) unlistenToggle();
 });
 </script>
@@ -470,6 +550,64 @@ onBeforeUnmount(() => {
             <p class="cb-note">
                 Color-blind modes remap colors you confuse into tones you can
                 tell apart. Color boost makes every color more vivid.
+            </p>
+        </section>
+
+        <section class="panel cb">
+            <div class="cb-head">
+                <h2>Night schedule</h2>
+                <span class="cb-tag" :class="{ live: scheduleActive }">
+                    {{ scheduleActive ? 'Active now' : 'Auto warmth' }}
+                </span>
+            </div>
+            <div class="sched-row">
+                <span>Warm the screen on a schedule</span>
+                <button
+                    class="mini-toggle"
+                    :class="{ on: scheduleEnabled }"
+                    role="switch"
+                    :aria-checked="scheduleEnabled"
+                    @click="scheduleEnabled = !scheduleEnabled"
+                >
+                    <span class="knob2"></span>
+                </button>
+            </div>
+            <div class="sched-times" :class="{ disabled: !scheduleEnabled }">
+                <label>
+                    From
+                    <input
+                        v-model="scheduleStart"
+                        type="time"
+                        :disabled="!scheduleEnabled"
+                    />
+                </label>
+                <label>
+                    To
+                    <input
+                        v-model="scheduleEnd"
+                        type="time"
+                        :disabled="!scheduleEnabled"
+                    />
+                </label>
+            </div>
+            <div class="ctrl" :class="{ disabled: !scheduleEnabled }">
+                <div class="ctrl-head">
+                    <label>Warmth</label>
+                    <span class="val">{{ nightTemp }} K</span>
+                </div>
+                <input
+                    v-model.number="nightTemp"
+                    type="range"
+                    min="2700"
+                    max="5500"
+                    step="50"
+                    :disabled="!scheduleEnabled"
+                />
+            </div>
+            <p class="cb-note">
+                Automatically warms your screen during these hours. Lower
+                Kelvin is warmer. Keep ChromaVale running in the tray for this
+                to work.
             </p>
         </section>
 
@@ -815,6 +953,47 @@ input[type='range']:disabled {
     font-size: 0.78rem;
     line-height: 1.45;
     color: var(--muted);
+}
+
+.cb-tag.live {
+    color: #5bd6a0;
+    background: rgba(91, 214, 160, 0.16);
+}
+.sched-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 14px;
+    font-size: 0.86rem;
+    font-weight: 600;
+}
+.sched-times {
+    display: flex;
+    gap: 0.6rem;
+    margin-bottom: 14px;
+}
+.sched-times.disabled {
+    opacity: 0.5;
+}
+.sched-times label {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--muted);
+}
+.sched-times input[type='time'] {
+    font: inherit;
+    font-size: 0.86rem;
+    color: var(--ink);
+    background: #1c1c22;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 0.4rem 0.55rem;
+    color-scheme: dark;
 }
 
 .option-row {
