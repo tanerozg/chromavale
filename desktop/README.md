@@ -32,6 +32,10 @@ Rust.
   so your screen is tuned the moment you log in.
 - **Night schedule:** automatically warms the screen during a chosen time
   window (e.g. 21:00-07:00), running in the background.
+- **Per-app profiles:** detects the foreground app and auto-applies a profile
+  you assign to it (e.g. Neon for a game, Comfort for your editor), restoring
+  your manual look when you switch away. Works in fullscreen games because it
+  drives the global engine rather than an overlay.
 - The screen is always restored to neutral when the app quits.
 
 Color-blind correction on macOS and per-app filtering are the next milestones.

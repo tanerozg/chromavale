@@ -32,6 +32,54 @@ fn show_main_window(app: &tauri::AppHandle) {
     }
 }
 
+/// Returns the executable file name (e.g. "game.exe") of the foreground window.
+#[cfg(windows)]
+fn foreground_exe() -> Option<String> {
+    use windows::core::PWSTR;
+    use windows::Win32::Foundation::CloseHandle;
+    use windows::Win32::System::Threading::{
+        OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32,
+        PROCESS_QUERY_LIMITED_INFORMATION,
+    };
+    use windows::Win32::UI::WindowsAndMessaging::{
+        GetForegroundWindow, GetWindowThreadProcessId,
+    };
+
+    unsafe {
+        let hwnd = GetForegroundWindow();
+        if hwnd.0.is_null() {
+            return None;
+        }
+        let mut pid = 0u32;
+        GetWindowThreadProcessId(hwnd, Some(&mut pid));
+        if pid == 0 {
+            return None;
+        }
+        let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid).ok()?;
+
+        let mut buf = [0u16; 260];
+        let mut size = buf.len() as u32;
+        let ok = QueryFullProcessImageNameW(
+            handle,
+            PROCESS_NAME_WIN32,
+            PWSTR(buf.as_mut_ptr()),
+            &mut size,
+        );
+        let _ = CloseHandle(handle);
+        if ok.is_err() {
+            return None;
+        }
+
+        let path = String::from_utf16_lossy(&buf[..size as usize]);
+        let name = path
+            .rsplit(['\\', '/'])
+            .next()
+            .unwrap_or(&path)
+            .to_string();
+        Some(name)
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
@@ -128,6 +176,24 @@ pub fn run() {
                 if let Some(window) = app.get_webview_window("main") {
                     let _ = window.hide();
                 }
+            }
+
+            // Watch the foreground app so the UI can auto-switch profiles.
+            #[cfg(windows)]
+            {
+                let handle = app.handle().clone();
+                std::thread::spawn(move || {
+                    let mut last = String::new();
+                    loop {
+                        if let Some(name) = foreground_exe() {
+                            if name != last {
+                                last = name.clone();
+                                let _ = handle.emit("foreground-app", name);
+                            }
+                        }
+                        std::thread::sleep(std::time::Duration::from_millis(1000));
+                    }
+                });
             }
 
             Ok(())

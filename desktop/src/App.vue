@@ -49,9 +49,21 @@ const nightTemp = ref(3400);
 const scheduleActive = ref(false);
 let scheduleInterval: ReturnType<typeof setInterval> | null = null;
 
-const effectiveTemp = computed(() =>
-    scheduleActive.value ? nightTemp.value : settings.temperature,
-);
+// Per-app override: set by the foreground-app watcher. When present it takes
+// precedence over the manual settings, leaving the sliders untouched.
+type ProfileData = {
+    settings: Settings;
+    filterKind: FilterKind;
+    colorBoost: number;
+};
+const activeOverride = ref<ProfileData | null>(null);
+
+const effectiveTemp = computed(() => {
+    const base = activeOverride.value
+        ? activeOverride.value.settings.temperature
+        : settings.temperature;
+    return scheduleActive.value ? nightTemp.value : base;
+});
 
 function parseHM(value: string): number {
     const [h, m] = value.split(':').map(Number);
@@ -168,6 +180,78 @@ const activeGaming = computed(
         )?.name ?? '',
 );
 
+// --- Per-app profiles ---
+// Map a profile name to the engine + filter state it represents.
+function presetData(name: string): ProfileData {
+    if (name === 'Off' || name === 'Neutral') {
+        return { settings: { ...NEUTRAL }, filterKind: 'none', colorBoost: 1 };
+    }
+    const comfort = presets.find((p) => p.name === name);
+    if (comfort) {
+        return {
+            settings: { ...NEUTRAL, ...comfort.values },
+            filterKind: 'none',
+            colorBoost: 1,
+        };
+    }
+    const gaming = gamingPresets.find((p) => p.name === name);
+    if (gaming) {
+        return {
+            settings: { ...gaming.settings },
+            filterKind: 'none',
+            colorBoost: gaming.colorBoost,
+        };
+    }
+    return { settings: { ...NEUTRAL }, filterKind: 'none', colorBoost: 1 };
+}
+
+const profileOptions = [
+    'Off',
+    ...presets.map((p) => p.name),
+    ...gamingPresets.map((p) => p.name),
+];
+
+type AppRule = { app: string; preset: string };
+const rules = ref<AppRule[]>([]);
+const currentApp = ref('');
+
+function updateOverride() {
+    const match = rules.value.find(
+        (r) => r.app.toLowerCase() === currentApp.value.toLowerCase(),
+    );
+    activeOverride.value = match ? presetData(match.preset) : null;
+}
+
+const activeRule = computed(() =>
+    rules.value.find(
+        (r) => r.app.toLowerCase() === currentApp.value.toLowerCase(),
+    ),
+);
+
+function addRuleForCurrent() {
+    if (!currentApp.value) return;
+    if (rules.value.some((r) => r.app.toLowerCase() === currentApp.value.toLowerCase())) {
+        return;
+    }
+    rules.value.push({ app: currentApp.value, preset: 'Comfort' });
+}
+function removeRule(index: number) {
+    rules.value.splice(index, 1);
+}
+
+watch(activeOverride, () => {
+    scheduleApply();
+    scheduleFilter();
+});
+watch(
+    rules,
+    () => {
+        updateOverride();
+        schedulePersist();
+    },
+    { deep: true },
+);
+
 const sliders: {
     key: keyof Settings;
     label: string;
@@ -212,9 +296,10 @@ let applyTimer: ReturnType<typeof setTimeout> | null = null;
 
 async function apply() {
     if (!enabled.value) return;
+    const src = activeOverride.value ? activeOverride.value.settings : settings;
     try {
         await invoke('apply_color', {
-            settings: { ...settings, temperature: effectiveTemp.value },
+            settings: { ...src, temperature: effectiveTemp.value },
         });
         error.value = '';
         status.value = scheduleActive.value
@@ -245,14 +330,20 @@ let filterTimer: ReturnType<typeof setTimeout> | null = null;
 
 async function applyFilter() {
     if (!enabled.value) return;
+    const kind = activeOverride.value
+        ? activeOverride.value.filterKind
+        : filterKind.value;
+    const boost = activeOverride.value
+        ? activeOverride.value.colorBoost
+        : colorBoost.value;
     try {
-        if (filterKind.value === 'none' && colorBoost.value === 1) {
+        if (kind === 'none' && boost === 1) {
             await invoke('clear_filter');
         } else {
             await invoke('apply_filter', {
-                kind: filterKind.value,
+                kind,
                 strength: intensity.value,
-                colorBoost: colorBoost.value,
+                colorBoost: boost,
             });
         }
         error.value = '';
@@ -287,6 +378,7 @@ type SavedState = {
     scheduleStart: string;
     scheduleEnd: string;
     nightTemp: number;
+    rules: AppRule[];
 };
 
 let store: Awaited<ReturnType<typeof load>> | null = null;
@@ -305,6 +397,7 @@ async function persist() {
         scheduleStart: scheduleStart.value,
         scheduleEnd: scheduleEnd.value,
         nightTemp: nightTemp.value,
+        rules: JSON.parse(JSON.stringify(rules.value)),
     };
     try {
         await store.set('state', state);
@@ -402,6 +495,7 @@ watch(
 );
 
 let unlistenToggle: UnlistenFn | null = null;
+let unlistenApp: UnlistenFn | null = null;
 
 onMounted(async () => {
     // Restore saved state from the last session.
@@ -420,6 +514,7 @@ onMounted(async () => {
                 scheduleEnd.value = saved.scheduleEnd;
                 nightTemp.value = saved.nightTemp;
             }
+            if (saved.rules) rules.value = saved.rules;
         }
     } catch {
         // No saved state yet, or store unavailable: start from defaults.
@@ -441,6 +536,10 @@ onMounted(async () => {
     unlistenToggle = await listen('toggle-power', () => {
         toggleEnabled();
     });
+    unlistenApp = await listen<string>('foreground-app', (event) => {
+        currentApp.value = event.payload;
+        updateOverride();
+    });
 });
 onBeforeUnmount(() => {
     if (applyTimer) clearTimeout(applyTimer);
@@ -448,6 +547,7 @@ onBeforeUnmount(() => {
     if (persistTimer) clearTimeout(persistTimer);
     if (scheduleInterval) clearInterval(scheduleInterval);
     if (unlistenToggle) unlistenToggle();
+    if (unlistenApp) unlistenApp();
 });
 </script>
 
@@ -623,6 +723,44 @@ onBeforeUnmount(() => {
             <p class="cb-note">
                 Color-blind modes remap colors you confuse into tones you can
                 tell apart. For vivid gaming looks, use Gaming &amp; vibe above.
+            </p>
+        </section>
+
+        <section class="panel cb">
+            <div class="cb-head">
+                <h2>Per-app profiles</h2>
+                <span class="cb-tag" :class="{ live: activeOverride }">
+                    {{ activeOverride ? 'Auto active' : 'Automation' }}
+                </span>
+            </div>
+            <div class="app-now">
+                <span class="app-now-label">Foreground app</span>
+                <span class="app-now-name">{{ currentApp || 'detecting...' }}</span>
+                <button
+                    v-if="currentApp && !activeRule"
+                    class="app-add"
+                    @click="addRuleForCurrent"
+                >
+                    + Add rule
+                </button>
+            </div>
+            <ul v-if="rules.length" class="rules">
+                <li v-for="(r, i) in rules" :key="i" class="rule">
+                    <span class="rule-app">{{ r.app }}</span>
+                    <select v-model="r.preset" class="rule-select">
+                        <option v-for="o in profileOptions" :key="o" :value="o">
+                            {{ o }}
+                        </option>
+                    </select>
+                    <button class="rule-remove" @click="removeRule(i)" aria-label="Remove">
+                        &times;
+                    </button>
+                </li>
+            </ul>
+            <p class="cb-note">
+                Automatically applies a profile when an app is in focus, then
+                restores your manual look when you switch away. Works in
+                fullscreen games too.
             </p>
         </section>
 
@@ -1071,6 +1209,90 @@ input[type='range']:disabled {
 .cb-tag.live {
     color: #5bd6a0;
     background: rgba(91, 214, 160, 0.16);
+}
+.app-now {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 12px;
+    padding: 0.6rem 0.75rem;
+    background: #1c1c22;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+}
+.app-now-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+}
+.app-now-name {
+    flex: 1;
+    font-size: 0.84rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.app-add {
+    border: 1px solid rgba(107, 91, 240, 0.5);
+    background: rgba(107, 91, 240, 0.14);
+    color: #c2b8ff;
+    border-radius: 8px;
+    padding: 0.3rem 0.55rem;
+    font: inherit;
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+    flex: none;
+}
+.app-add:hover {
+    background: rgba(107, 91, 240, 0.22);
+}
+.rules {
+    list-style: none;
+    margin: 0 0 12px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+.rule {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.rule-app {
+    flex: 1;
+    font-size: 0.82rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.rule-select {
+    font: inherit;
+    font-size: 0.8rem;
+    color: var(--ink);
+    background: #1c1c22;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0.3rem 0.4rem;
+    color-scheme: dark;
+    cursor: pointer;
+}
+.rule-remove {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0.2rem;
+}
+.rule-remove:hover {
+    color: #ef7d8a;
 }
 .sched-row {
     display: flex;
