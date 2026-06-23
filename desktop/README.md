@@ -10,13 +10,33 @@ Rust.
   ramp: color temperature, brightness, gamma, and per-channel red/green/blue.
 - **Presets** (Comfort, Reading, Night, Vivid) and a power toggle.
 - On Windows it uses `SetDeviceGammaRamp`; on macOS `CGSetDisplayTransferByTable`.
-- **Color-blind correction (Windows):** real daltonization for protan, deutan
-  and tritan with an adjustable strength, applied to the whole screen via the
+- **Screen filters (Windows):** real daltonization for protan, deutan and
+  tritan with adjustable intensity, plus Grayscale, Grayscale inverted,
+  Inverted and an independent Color Boost, applied to the whole screen via the
   Windows Magnification API (`MagSetFullscreenColorEffect`, the same mechanism
-  Windows' own Color Filters use). This is the paid killer feature.
+  Windows' own Color Filters use). Matches and exceeds the built-in panel.
+- **Global hotkey:** toggle ChromaVale on/off from anywhere with `Ctrl+Alt+C`.
+- **System tray:** the app runs in the background; closing the window hides it
+  to the tray (right-click for Show / Toggle / Quit) so the hotkey and filters
+  keep working.
 - The screen is always restored to neutral when the app quits.
 
 Color-blind correction on macOS and per-app filtering are the next milestones.
+
+## Tests
+
+```bash
+cd desktop/src-tauri
+cargo test --lib                       # color engine + filter matrix math
+cargo test --test hotkey_registration  # confirms Ctrl+Alt+C registers with the OS
+```
+
+The end-to-end hotkey test that synthesizes a real keystroke is `#[ignore]`d
+because it needs an interactive desktop session. Run it yourself with:
+
+```bash
+cargo test --test hotkey_registration -- --ignored
+```
 
 ## Prerequisites
 

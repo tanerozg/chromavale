@@ -23,9 +23,20 @@ fn clear_filter() -> Result<(), String> {
     engine::filters::clear()
 }
 
+fn show_main_window(app: &tauri::AppHandle) {
+    use tauri::Manager;
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    use tauri::Emitter;
+    use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+    use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+    use tauri::{Emitter, Manager};
     use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
     // Global hotkey to toggle ChromaVale on/off from anywhere: Ctrl+Alt+C.
@@ -48,6 +59,59 @@ pub fn run() {
         )
         .setup(move |app| {
             app.global_shortcut().register(toggle)?;
+
+            // System tray with a menu so ChromaVale can live in the background.
+            let show_item =
+                MenuItem::with_id(app, "show", "Show ChromaVale", true, None::<&str>)?;
+            let toggle_item = MenuItem::with_id(
+                app,
+                "toggle",
+                "Toggle on/off (Ctrl+Alt+C)",
+                true,
+                None::<&str>,
+            )?;
+            let separator = PredefinedMenuItem::separator(app)?;
+            let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+            let menu =
+                Menu::with_items(app, &[&show_item, &toggle_item, &separator, &quit_item])?;
+
+            TrayIconBuilder::new()
+                .icon(app.default_window_icon().unwrap().clone())
+                .tooltip("ChromaVale")
+                .menu(&menu)
+                .show_menu_on_left_click(false)
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "show" => show_main_window(app),
+                    "toggle" => {
+                        let _ = app.emit("toggle-power", ());
+                    }
+                    "quit" => app.exit(0),
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        show_main_window(tray.app_handle());
+                    }
+                })
+                .build(app)?;
+
+            // Closing the window hides it to the tray instead of quitting, so
+            // the global hotkey and filters keep working in the background.
+            if let Some(window) = app.get_webview_window("main") {
+                let win = window.clone();
+                window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                        api.prevent_close();
+                        let _ = win.hide();
+                    }
+                });
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
