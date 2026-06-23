@@ -25,8 +25,31 @@ fn clear_filter() -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    use tauri::Emitter;
+    use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
+
+    // Global hotkey to toggle ChromaVale on/off from anywhere: Ctrl+Alt+C.
+    let toggle = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::KeyC);
+    let toggle_for_handler =
+        Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::KeyC);
+
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(move |app, shortcut, event| {
+                    if *shortcut == toggle_for_handler
+                        && event.state() == ShortcutState::Pressed
+                    {
+                        let _ = app.emit("toggle-power", ());
+                    }
+                })
+                .build(),
+        )
+        .setup(move |app| {
+            app.global_shortcut().register(toggle)?;
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             apply_color,
             reset_color,

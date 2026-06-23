@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reactive, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
+import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 
 type Settings = {
     temperature: number; // Kelvin
@@ -139,6 +140,7 @@ async function reset() {
 let filterTimer: ReturnType<typeof setTimeout> | null = null;
 
 async function applyFilter() {
+    if (!enabled.value) return;
     try {
         if (filterKind.value === 'none' && colorBoost.value === 1) {
             await invoke('clear_filter');
@@ -173,8 +175,14 @@ async function toggleEnabled() {
     enabled.value = !enabled.value;
     if (enabled.value) {
         await apply();
+        await applyFilter();
     } else {
         await reset();
+        try {
+            await invoke('clear_filter');
+        } catch (e) {
+            error.value = String(e);
+        }
     }
 }
 
@@ -192,10 +200,18 @@ watch(
     { deep: true },
 );
 
-onMounted(apply);
+let unlistenToggle: UnlistenFn | null = null;
+
+onMounted(async () => {
+    await apply();
+    unlistenToggle = await listen('toggle-power', () => {
+        toggleEnabled();
+    });
+});
 onBeforeUnmount(() => {
     if (applyTimer) clearTimeout(applyTimer);
     if (filterTimer) clearTimeout(filterTimer);
+    if (unlistenToggle) unlistenToggle();
 });
 </script>
 
@@ -237,11 +253,17 @@ onBeforeUnmount(() => {
                 class="power"
                 :class="{ on: enabled }"
                 @click="toggleEnabled"
+                title="Toggle ChromaVale (Ctrl+Alt+C)"
             >
                 <span class="dot"></span>
                 {{ enabled ? 'On' : 'Off' }}
             </button>
         </header>
+
+        <p class="hotkey-hint">
+            Toggle anywhere with
+            <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>C</kbd>
+        </p>
 
         <section class="presets">
             <button
@@ -421,6 +443,22 @@ onBeforeUnmount(() => {
 }
 .power.on .dot {
     background: #5bd6a0;
+}
+
+.hotkey-hint {
+    margin-top: -6px;
+    font-size: 0.74rem;
+    color: var(--muted);
+}
+.hotkey-hint kbd {
+    font-family: inherit;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--ink);
+    background: #1c1c22;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 0.05rem 0.3rem;
 }
 
 .presets {
