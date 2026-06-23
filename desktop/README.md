@@ -19,6 +19,10 @@ Rust.
 - **System tray:** the app runs in the background; closing the window hides it
   to the tray (right-click for Show / Toggle / Quit) so the hotkey and filters
   keep working.
+- **Remembers your setup:** all settings, the active filter and the on/off
+  state are saved and reapplied on the next launch.
+- **Start with Windows:** optional launch at login (starts hidden in the tray)
+  so your screen is tuned the moment you log in.
 - The screen is always restored to neutral when the app quits.
 
 Color-blind correction on macOS and per-app filtering are the next milestones.

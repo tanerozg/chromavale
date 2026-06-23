@@ -6,6 +6,10 @@
     "permissions": [
         "core:default",
         "shell:allow-open",
-        "global-shortcut:default"
+        "global-shortcut:default",
+        "store:default",
+        "autostart:allow-enable",
+        "autostart:allow-disable",
+        "autostart:allow-is-enabled"
     ]
 }

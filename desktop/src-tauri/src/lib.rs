@@ -44,19 +44,29 @@ pub fn run() {
     let toggle_for_handler =
         Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::KeyC);
 
-    tauri::Builder::default()
+    let global_shortcut = tauri_plugin_global_shortcut::Builder::new()
+        .with_handler(move |app, shortcut, event| {
+            if *shortcut == toggle_for_handler && event.state() == ShortcutState::Pressed {
+                let _ = app.emit("toggle-power", ());
+            }
+        })
+        .build();
+
+    #[allow(unused_mut)]
+    let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .plugin(
-            tauri_plugin_global_shortcut::Builder::new()
-                .with_handler(move |app, shortcut, event| {
-                    if *shortcut == toggle_for_handler
-                        && event.state() == ShortcutState::Pressed
-                    {
-                        let _ = app.emit("toggle-power", ());
-                    }
-                })
-                .build(),
-        )
+        .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(global_shortcut);
+
+    #[cfg(desktop)]
+    {
+        builder = builder.plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            Some(vec!["--minimized"]),
+        ));
+    }
+
+    builder
         .setup(move |app| {
             app.global_shortcut().register(toggle)?;
 
@@ -110,6 +120,14 @@ pub fn run() {
                         let _ = win.hide();
                     }
                 });
+            }
+
+            // When launched at login (autostart passes --minimized), start
+            // hidden in the tray instead of popping up a window.
+            if std::env::args().any(|arg| arg == "--minimized") {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.hide();
+                }
             }
 
             Ok(())

@@ -2,6 +2,12 @@
 import { reactive, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
+import { load } from '@tauri-apps/plugin-store';
+import {
+    enable as enableAutostart,
+    disable as disableAutostart,
+    isEnabled as isAutostartEnabled,
+} from '@tauri-apps/plugin-autostart';
 
 type Settings = {
     temperature: number; // Kelvin
@@ -164,6 +170,62 @@ function scheduleFilter() {
 
 watch([filterKind, intensity, colorBoost], scheduleFilter);
 
+// --- Persistence: remember everything across launches ---
+type SavedState = {
+    settings: Settings;
+    enabled: boolean;
+    filterKind: FilterKind;
+    intensity: number;
+    colorBoost: number;
+};
+
+let store: Awaited<ReturnType<typeof load>> | null = null;
+let restored = false;
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+
+async function persist() {
+    if (!store || !restored) return;
+    const state: SavedState = {
+        settings: { ...settings },
+        enabled: enabled.value,
+        filterKind: filterKind.value,
+        intensity: intensity.value,
+        colorBoost: colorBoost.value,
+    };
+    try {
+        await store.set('state', state);
+        await store.save();
+    } catch {
+        // Ignore persistence errors; they should never break the UI.
+    }
+}
+
+function schedulePersist() {
+    if (persistTimer) clearTimeout(persistTimer);
+    persistTimer = setTimeout(persist, 300);
+}
+
+watch([settings, enabled, filterKind, intensity, colorBoost], schedulePersist, {
+    deep: true,
+});
+
+// --- Autostart ---
+const autostart = ref(false);
+
+async function toggleAutostart() {
+    try {
+        if (autostart.value) {
+            await disableAutostart();
+            autostart.value = false;
+        } else {
+            await enableAutostart();
+            autostart.value = true;
+        }
+    } catch (e) {
+        error.value = String(e);
+    }
+}
+
 function choosePreset(name: string) {
     const preset = presets.find((p) => p.name === name);
     if (!preset) return;
@@ -203,7 +265,31 @@ watch(
 let unlistenToggle: UnlistenFn | null = null;
 
 onMounted(async () => {
+    // Restore saved state from the last session.
+    try {
+        store = await load('settings.json');
+        const saved = await store.get<SavedState>('state');
+        if (saved) {
+            Object.assign(settings, saved.settings);
+            enabled.value = saved.enabled;
+            filterKind.value = saved.filterKind;
+            intensity.value = saved.intensity;
+            colorBoost.value = saved.colorBoost;
+        }
+    } catch {
+        // No saved state yet, or store unavailable: start from defaults.
+    }
+    restored = true;
+
     await apply();
+    await applyFilter();
+
+    try {
+        autostart.value = await isAutostartEnabled();
+    } catch {
+        // Autostart not available on this platform.
+    }
+
     unlistenToggle = await listen('toggle-power', () => {
         toggleEnabled();
     });
@@ -211,6 +297,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
     if (applyTimer) clearTimeout(applyTimer);
     if (filterTimer) clearTimeout(filterTimer);
+    if (persistTimer) clearTimeout(persistTimer);
     if (unlistenToggle) unlistenToggle();
 });
 </script>
@@ -364,6 +451,19 @@ onBeforeUnmount(() => {
                 tell apart. Color boost makes every color more vivid.
             </p>
         </section>
+
+        <div class="option-row">
+            <span>Start with Windows</span>
+            <button
+                class="mini-toggle"
+                :class="{ on: autostart }"
+                role="switch"
+                :aria-checked="autostart"
+                @click="toggleAutostart"
+            >
+                <span class="knob2"></span>
+            </button>
+        </div>
 
         <footer class="foot">
             <button class="btn ghost" @click="reset">Reset screen</button>
@@ -662,6 +762,47 @@ input[type='range']:disabled {
     font-size: 0.78rem;
     line-height: 1.45;
     color: var(--muted);
+}
+
+.option-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+    padding: 0.7rem 0.9rem;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    font-size: 0.86rem;
+    font-weight: 600;
+}
+.mini-toggle {
+    position: relative;
+    width: 40px;
+    height: 23px;
+    border-radius: 999px;
+    border: none;
+    background: #2a2a31;
+    cursor: pointer;
+    transition: background 0.18s;
+    flex: none;
+}
+.mini-toggle.on {
+    background: var(--accent);
+}
+.knob2 {
+    position: absolute;
+    top: 2.5px;
+    left: 2.5px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    transition: transform 0.18s cubic-bezier(0.3, 0.8, 0.3, 1);
+}
+.mini-toggle.on .knob2 {
+    transform: translateX(17px);
 }
 
 .foot {
